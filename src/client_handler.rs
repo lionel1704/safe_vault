@@ -1062,37 +1062,6 @@ impl ClientHandler {
         })
     }
 
-    fn handle_update_login_packet_vault_req(
-        &mut self,
-        requester: PublicId,
-        updated_login_packet: LoginPacket,
-        message_id: MessageId,
-    ) -> Option<Action> {
-        let result = self
-            .login_packet(
-                utils::own_key(&requester)?,
-                updated_login_packet.destination(),
-            )
-            .and_then(|_existing_login_packet| {
-                if !updated_login_packet.size_is_valid() {
-                    return Err(NdError::ExceededSize);
-                }
-                self.login_packets
-                    .put(&updated_login_packet)
-                    .map_err(|err| err.to_string().into())
-            });
-        Some(Action::RespondToClientHandlers {
-            sender: *self.id.name(),
-            rpc: Rpc::Response {
-                response: Response::Mutation(result),
-                requester,
-                message_id,
-                // Updating the login packet is free
-                refund: None,
-            },
-        })
-    }
-
     fn notify_destination_owners(&mut self, destination: &XorName, transaction: Transaction) {
         for client_id in self.lookup_client_and_its_apps(destination) {
             self.send_notification_to_client(client_id, Notification(transaction));
