@@ -13,46 +13,18 @@
     html_favicon_url = "https://maidsafe.net/img/favicon.ico",
     test(attr(forbid(warnings)))
 )]
-#![forbid(
-    exceeding_bitshifts,
-    mutable_transmutes,
-    no_mangle_const_items,
-    unknown_crate_types,
-    warnings
-)]
-#![deny(
-    bad_style,
-    deprecated,
-    improper_ctypes,
-    missing_docs,
-    non_shorthand_field_patterns,
-    overflowing_literals,
-    plugin_as_library,
-    stable_features,
-    unconditional_recursion,
-    unknown_lints,
-    unsafe_code,
-    unused,
-    unused_allocation,
-    unused_attributes,
-    unused_comparisons,
-    unused_features,
-    unused_parens,
-    while_true
-)]
+// For explanation of lint checks, run `rustc -W help`.
+#![deny(unsafe_code)]
 #![warn(
+    // TODO: add missing debug implementations for structs?
+    // missing_debug_implementations,
+    missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
     unused_qualifications,
     unused_results
-)]
-#![allow(
-    box_pointers,
-    missing_copy_implementations,
-    missing_debug_implementations,
-    variant_size_differences
 )]
 // For quick_error
 #![recursion_limit = "128"]
@@ -75,12 +47,18 @@ pub(crate) use to_db_key::ToDbKey;
 /// Utilities for testing.
 #[cfg(feature = "mock")]
 pub mod mock;
+/// Mock version of Routing
+pub mod mock_routing;
 
 // `crate::quic_p2p` refers to real or mock quic_p2p, depending on the "mock" feature flag.
 #[cfg(feature = "mock")]
 pub use self::mock::quic_p2p;
 #[cfg(not(feature = "mock"))]
 pub use quic_p2p;
+// FIXME: uncomment once we have compatible Routing API.
+// #[cfg(not(feature = "mock"))]
+// pub use routing;
+pub use crate::mock_routing as routing;
 
 pub use crate::{
     chunk_store::error::Error as ChunkStoreError,

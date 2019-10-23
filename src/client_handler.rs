@@ -14,7 +14,7 @@ use self::{
     balance::{Balance, BalancesDb},
 };
 use crate::{
-    action::Action,
+    action::{Action, ConsensusAction},
     chunk_store::{error::Error as ChunkStoreError, LoginPacketChunkStore},
     config_handler::write_connection_info,
     quic_p2p::{self, Config as QuicP2pConfig, Event, NodeInfo, Peer, QuicP2p},
@@ -168,6 +168,64 @@ impl ClientHandler {
                 "{}: Disconnected from client candidate on {}",
                 self, peer_addr
             );
+        }
+    }
+
+    pub fn handle_consensused_action(&mut self, action: ConsensusAction) -> Option<Action> {
+        use ConsensusAction::*;
+        trace!("{}: Consensused {:?}", self, action,);
+        match action {
+            PayAndForward {
+                request,
+                client_public_id,
+                message_id,
+                cost,
+            } => {
+                let owner = utils::owner(&client_public_id)?;
+                self.pay(
+                    &client_public_id,
+                    owner.public_key(),
+                    &request,
+                    message_id,
+                    cost,
+                )?;
+
+                Some(Action::ForwardClientRequest(Rpc::Request {
+                    requester: client_public_id,
+                    request,
+                    message_id,
+                }))
+            }
+            Forward {
+                request,
+                client_public_id,
+                message_id,
+            } => Some(Action::ForwardClientRequest(Rpc::Request {
+                requester: client_public_id,
+                request,
+                message_id,
+            })),
+            PayAndProxy {
+                request,
+                client_public_id,
+                message_id,
+                cost,
+            } => {
+                let owner = utils::owner(&client_public_id)?;
+                self.pay(
+                    &client_public_id,
+                    owner.public_key(),
+                    &request,
+                    message_id,
+                    cost,
+                )?;
+
+                Some(Action::ProxyClientRequest(Rpc::Request {
+                    requester: client_public_id,
+                    request,
+                    message_id,
+                }))
+            }
         }
     }
 
@@ -355,8 +413,8 @@ impl ClientHandler {
                 new_login_packet,
                 message_id,
             ),
-            UpdateLoginPacket(ref updated_login_packet) => self.handle_update_login_packet_req(
-                &client.public_id,
+            UpdateLoginPacket(updated_login_packet) => self.handle_update_login_packet_req(
+                client.public_id.clone(),
                 updated_login_packet,
                 message_id,
             ),
@@ -371,9 +429,9 @@ impl ClientHandler {
                 key,
                 version,
                 permissions,
-            } => self.handle_ins_auth_key(client, key, version, permissions, message_id),
+            } => self.handle_ins_auth_key_client_req(client, key, version, permissions, message_id),
             DelAuthKey { key, version } => {
-                self.handle_del_auth_key(client, key, version, message_id)
+                self.handle_del_auth_key_client_req(client, key, version, message_id)
             }
         }
     }
@@ -423,19 +481,11 @@ impl ClientHandler {
         client: &ClientInfo,
         message_id: MessageId,
     ) -> Option<Action> {
-        let owner = utils::owner(&client.public_id)?;
-        self.pay(
-            &client.public_id,
-            owner.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
-
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -445,9 +495,9 @@ impl ClientHandler {
         client: &ClientInfo,
         message_id: MessageId,
     ) -> Option<Action> {
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
         }))
     }
@@ -477,18 +527,12 @@ impl ClientHandler {
         }
 
         let request = Request::PutMData(chunk);
-        self.pay(
-            &client.public_id,
-            owner.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
 
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -520,18 +564,11 @@ impl ClientHandler {
         }
 
         let request = Request::PutIData(chunk);
-        self.pay(
-            &client.public_id,
-            owner.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
-
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -562,9 +599,9 @@ impl ClientHandler {
             );
             return None;
         }
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
             request: Request::DeleteUnpubIData(address),
+            client_public_id: client.public_id.clone(),
             message_id,
         }))
     }
@@ -606,18 +643,11 @@ impl ClientHandler {
         }
 
         let request = Request::PutAData(chunk);
-        self.pay(
-            &client.public_id,
-            owner.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
-
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -636,9 +666,9 @@ impl ClientHandler {
             return None;
         }
 
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
             request: Request::DeleteAData(address),
+            client_public_id: client.public_id.clone(),
             message_id,
         }))
     }
@@ -649,19 +679,11 @@ impl ClientHandler {
         request: Request,
         message_id: MessageId,
     ) -> Option<Action> {
-        let owner = utils::owner(&client.public_id)?;
-        self.pay(
-            &client.public_id,
-            owner.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
-
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client.public_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client.public_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -790,6 +812,19 @@ impl ClientHandler {
                 transaction_id,
                 message_id,
             ),
+            UpdateLoginPacket(updated_login_packet) => self.handle_update_login_packet_vault_req(
+                requester,
+                updated_login_packet,
+                message_id,
+            ),
+            InsAuthKey {
+                key,
+                version,
+                permissions,
+            } => self.handle_ins_auth_key_vault(requester, key, version, permissions, message_id),
+            DelAuthKey { key, version } => {
+                self.handle_del_auth_key_vault(requester, key, version, message_id)
+            }
             PutIData(_)
             | GetIData(_)
             | DeleteUnpubIData(_)
@@ -826,9 +861,6 @@ impl ClientHandler {
             | AppendUnseq(_)
             | GetBalance
             | ListAuthKeysAndVersion
-            | InsAuthKey { .. }
-            | DelAuthKey { .. }
-            | UpdateLoginPacket { .. }
             | GetLoginPacket(..) => {
                 error!(
                     "{}: Should not receive {:?} as a client handler.",
@@ -920,40 +952,26 @@ impl ClientHandler {
             amount,
             transaction_id,
         };
-        let action = Action::ForwardClientRequest(Rpc::Request {
-            request: request.clone(),
-            requester: requester.clone(),
-            message_id,
-        });
-
-        // For phase 1 we allow owners to create their own balance freely.
+        // For phases 1 & 2 we allow owners to create their own balance freely.
         let own_request = utils::own_key(requester)
             .map(|key| key == &owner_key)
             .unwrap_or(false);
         if own_request {
-            return Some(action);
+            return Some(Action::ConsensusVote(ConsensusAction::Forward {
+                request: request.clone(),
+                client_public_id: requester.clone(),
+                message_id,
+            }));
         }
 
-        self.pay(
-            &requester,
-            utils::owner(requester)?.public_key(),
-            &request,
+        let total_amount = amount.checked_add(*COST_OF_PUT)?;
+        // When ClientA(owner/app with permissions) creates a balance for ClientB
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
+            request,
+            client_public_id: requester.clone(),
             message_id,
-            *COST_OF_PUT,
-        )?;
-
-        // Creating a balance without coins
-        if amount.as_nano() == 0 {
-            return Some(action);
-        }
-
-        let result = match self.withdraw(requester.name(), amount) {
-            Ok(()) => return Some(action),
-            Err(error) => Err(error),
-        };
-
-        self.send_response_to_client(requester, message_id, Response::Transaction(result));
-        None
+            cost: total_amount,
+        }))
     }
 
     fn handle_create_balance_vault_req(
@@ -1000,25 +1018,16 @@ impl ClientHandler {
         transaction_id: TransactionId,
         message_id: MessageId,
     ) -> Option<Action> {
-        match self.withdraw(requester.name(), amount) {
-            Ok(()) => Some(Action::ForwardClientRequest(Rpc::Request {
-                request: Request::TransferCoins {
-                    destination,
-                    amount,
-                    transaction_id,
-                },
-                requester: requester.clone(),
-                message_id,
-            })),
-            Err(error) => {
-                self.send_response_to_client(
-                    requester,
-                    message_id,
-                    Response::Transaction(Err(error)),
-                );
-                None
-            }
-        }
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
+            request: Request::TransferCoins {
+                destination,
+                amount,
+                transaction_id,
+            },
+            client_public_id: requester.clone(),
+            message_id,
+            cost: amount,
+        }))
     }
 
     fn handle_transfer_coins_vault_req(
@@ -1236,18 +1245,12 @@ impl ClientHandler {
         }
 
         let request = Request::CreateLoginPacket(login_packet);
-        self.pay(
-            client_id,
-            utils::client(client_id)?.public_key(),
-            &request,
-            message_id,
-            *COST_OF_PUT,
-        )?;
 
-        Some(Action::ForwardClientRequest(Rpc::Request {
-            requester: client_id.clone(),
+        Some(Action::ConsensusVote(ConsensusAction::PayAndForward {
             request,
+            client_public_id: client_id.clone(),
             message_id,
+            cost: *COST_OF_PUT,
         }))
     }
 
@@ -1297,26 +1300,17 @@ impl ClientHandler {
         }
         // The requester bears the cost of storing the login packet
         let new_amount = amount.checked_add(*COST_OF_PUT)?;
-        // TODO - (after phase 1) - if `amount` < cost to store login packet return error msg here.
-        match self.withdraw(payer.name(), new_amount) {
-            Ok(_) => {
-                let request = Request::CreateLoginPacketFor {
-                    new_owner,
-                    amount,
-                    transaction_id,
-                    new_login_packet: login_packet,
-                };
-                Some(Action::ProxyClientRequest(Rpc::Request {
-                    request,
-                    requester: payer.clone(),
-                    message_id,
-                }))
-            }
-            Err(error) => {
-                self.send_response_to_client(payer, message_id, Response::Transaction(Err(error)));
-                None
-            }
-        }
+        Some(Action::ConsensusVote(ConsensusAction::PayAndProxy {
+            request: Request::CreateLoginPacketFor {
+                new_owner,
+                amount,
+                transaction_id,
+                new_login_packet: login_packet,
+            },
+            client_public_id: payer.clone(),
+            message_id,
+            cost: new_amount,
+        }))
     }
 
     /// Step two or three of the process - the payer is effectively doing a `CreateBalance` request
@@ -1389,25 +1383,15 @@ impl ClientHandler {
 
     fn handle_update_login_packet_req(
         &mut self,
-        client_id: &PublicId,
-        updated_login_packet: &LoginPacket,
+        client_id: PublicId,
+        updated_login_packet: LoginPacket,
         message_id: MessageId,
     ) -> Option<Action> {
-        let result = self
-            .login_packet(
-                utils::own_key(client_id)?,
-                updated_login_packet.destination(),
-            )
-            .and_then(|_existing_login_packet| {
-                if !updated_login_packet.size_is_valid() {
-                    return Err(NdError::ExceededSize);
-                }
-                self.login_packets
-                    .put(updated_login_packet)
-                    .map_err(|err| err.to_string().into())
-            });
-        self.send_response_to_client(client_id, message_id, Response::Mutation(result));
-        None
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
+            request: Request::UpdateLoginPacket(updated_login_packet),
+            client_public_id: client_id,
+            message_id,
+        }))
     }
 
     fn handle_get_login_packet_req(
@@ -1460,36 +1444,85 @@ impl ClientHandler {
         None
     }
 
-    fn handle_ins_auth_key(
-        &mut self,
+    fn handle_ins_auth_key_client_req(
+        &self,
         client: &ClientInfo,
         key: PublicKey,
         new_version: u64,
         permissions: AppPermissions,
         message_id: MessageId,
     ) -> Option<Action> {
-        let result = self.auth_keys.ins_auth_key(
-            utils::client(&client.public_id)?,
-            key,
-            new_version,
-            permissions,
-        );
-        self.send_response_to_client(&client.public_id, message_id, Response::Mutation(result));
-        None
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
+            request: Request::InsAuthKey {
+                key,
+                version: new_version,
+                permissions,
+            },
+            client_public_id: client.public_id.clone(),
+            message_id,
+        }))
     }
 
-    fn handle_del_auth_key(
+    fn handle_ins_auth_key_vault(
+        &mut self,
+        client: PublicId,
+        key: PublicKey,
+        new_version: u64,
+        permissions: AppPermissions,
+        message_id: MessageId,
+    ) -> Option<Action> {
+        let result =
+            self.auth_keys
+                .ins_auth_key(utils::client(&client)?, key, new_version, permissions);
+        Some(Action::RespondToClientHandlers {
+            sender: *self.id.name(),
+            rpc: Rpc::Response {
+                response: Response::Mutation(result),
+                requester: client,
+                message_id,
+                // Free operation
+                refund: None,
+            },
+        })
+    }
+
+    fn handle_del_auth_key_client_req(
         &mut self,
         client: &ClientInfo,
         key: PublicKey,
         new_version: u64,
         message_id: MessageId,
     ) -> Option<Action> {
-        let result =
-            self.auth_keys
-                .del_auth_key(utils::client(&client.public_id)?, key, new_version);
-        self.send_response_to_client(&client.public_id, message_id, Response::Mutation(result));
-        None
+        Some(Action::ConsensusVote(ConsensusAction::Forward {
+            request: Request::DelAuthKey {
+                key,
+                version: new_version,
+            },
+            client_public_id: client.public_id.clone(),
+            message_id,
+        }))
+    }
+
+    fn handle_del_auth_key_vault(
+        &mut self,
+        client: PublicId,
+        key: PublicKey,
+        new_version: u64,
+        message_id: MessageId,
+    ) -> Option<Action> {
+        let result = self
+            .auth_keys
+            .del_auth_key(utils::client(&client)?, key, new_version);
+        Some(Action::RespondToClientHandlers {
+            sender: *self.id.name(),
+            rpc: Rpc::Response {
+                response: Response::Mutation(result),
+                requester: client,
+                message_id,
+                // Free operation
+                refund: None,
+            },
+        })
     }
 
     // Verify that valid signature is provided if the request requires it.

@@ -14,48 +14,17 @@
     html_favicon_url = "https://maidsafe.net/img/favicon.ico",
     test(attr(forbid(warnings)))
 )]
-// For explanation of lint checks, run `rustc -W help` or see
-// https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
-#![forbid(
-    bad_style,
-    exceeding_bitshifts,
-    mutable_transmutes,
-    no_mangle_const_items,
-    unknown_crate_types,
-    warnings
-)]
-#![deny(
-    deprecated,
-    improper_ctypes,
-    missing_docs,
-    non_shorthand_field_patterns,
-    overflowing_literals,
-    plugin_as_library,
-    stable_features,
-    unconditional_recursion,
-    unknown_lints,
-    unsafe_code,
-    unused,
-    unused_allocation,
-    unused_attributes,
-    unused_comparisons,
-    unused_features,
-    unused_parens,
-    while_true
-)]
+// For explanation of lint checks, run `rustc -W help`.
+#![deny(unsafe_code)]
 #![warn(
+    missing_debug_implementations,
+    missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_extern_crates,
     unused_import_braces,
     unused_qualifications,
     unused_results
-)]
-#![allow(
-    box_pointers,
-    missing_copy_implementations,
-    missing_debug_implementations,
-    variant_size_differences
 )]
 
 fn main() {
@@ -66,6 +35,7 @@ fn main() {
 mod detail {
     use env_logger::{fmt::Formatter, Builder as LoggerBuilder};
     use log::{self, Level, Record};
+    use safe_vault::routing::Node;
     use safe_vault::{self, Command, Config, Vault};
     use self_update::cargo_crate_version;
     use self_update::Status;
@@ -128,7 +98,15 @@ mod detail {
             log::error!("Failed to set interrupt handler: {:?}", error)
         }
 
-        match Vault::new(config, command_rx) {
+        let routing_node = match Node::builder().create() {
+            Ok(node) => node,
+            Err(e) => {
+                eprintln!("Could not start a Routing node: {:?}", e);
+                process::exit(-1);
+            }
+        };
+
+        match Vault::new(routing_node, config, command_rx) {
             Ok(mut vault) => vault.run(),
             Err(e) => {
                 println!("Cannot start vault due to error: {:?}", e);

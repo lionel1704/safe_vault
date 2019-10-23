@@ -7,12 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    action::Action,
+    action::{Action, ConsensusAction},
     adult::Adult,
     client_handler::ClientHandler,
     coins_handler::CoinsHandler,
     data_handler::DataHandler,
     quic_p2p::{Event, NodeInfo},
+    routing::{Event as RoutingEvent, Node},
     rpc::Rpc,
     utils, Config, Error, Result,
 };
@@ -20,6 +21,7 @@ use bincode;
 use crossbeam_channel::{select, Receiver};
 use log::{error, info, trace};
 use safe_nd::{NodeFullId, Request, XorName};
+use std::borrow::Cow;
 use std::{
     cell::Cell,
     fmt::{self, Display, Formatter},
@@ -62,11 +64,16 @@ pub struct Vault {
     state: State,
     event_receiver: Receiver<Event>,
     command_receiver: Receiver<Command>,
+    routing_node: Node,
 }
 
 impl Vault {
     /// Construct a new vault instance.
-    pub fn new(config: Config, command_receiver: Receiver<Command>) -> Result<Self> {
+    pub fn new(
+        routing_node: Node,
+        config: Config,
+        command_receiver: Receiver<Command>,
+    ) -> Result<Self> {
         let mut init_mode = Init::Load;
         let (is_elder, id) = Self::read_state(&config)?.unwrap_or_else(|| {
             let mut rng = rand::thread_rng();
@@ -117,6 +124,7 @@ impl Vault {
             state,
             event_receiver,
             command_receiver,
+            routing_node,
         };
         vault.dump_state()?;
         Ok(vault)
@@ -141,7 +149,7 @@ impl Vault {
             select! {
                 recv(self.event_receiver) -> event => {
                     if let Ok(event) = event {
-                        self.step(event)
+                        self.step_quic_p2p(event)
                     } else {
                         break
                     }
@@ -162,17 +170,46 @@ impl Vault {
         let mut processed = false;
 
         while let Ok(event) = self.event_receiver.try_recv() {
-            self.step(event);
+            self.step_quic_p2p(event);
+            processed = true;
+        }
+
+        while let Ok(event) = self.routing_node.try_next_ev() {
+            self.step_routing(event);
             processed = true;
         }
 
         processed
     }
 
-    fn step(&mut self, event: Event) {
+    fn step_routing(&mut self, event: RoutingEvent) {
+        let mut maybe_action = self.handle_routing_event(event);
+        while let Some(action) = maybe_action {
+            maybe_action = self.handle_action(action);
+        }
+    }
+
+    fn step_quic_p2p(&mut self, event: Event) {
         let mut maybe_action = self.handle_quic_p2p_event(event);
         while let Some(action) = maybe_action {
             maybe_action = self.handle_action(action);
+        }
+    }
+
+    fn handle_routing_event(&mut self, event: RoutingEvent) -> Option<Action> {
+        let client_handler = self.client_handler_mut()?;
+        match event {
+            RoutingEvent::Consensus(custom_event) => {
+                match bincode::deserialize::<ConsensusAction>(&custom_event) {
+                    Ok(consensus_action) => {
+                        client_handler.handle_consensused_action(consensus_action)
+                    }
+                    Err(e) => {
+                        error!("Invalid ConsensusAction passed from Routing: {:?}", e);
+                        None
+                    }
+                }
+            }
         }
     }
 
@@ -199,9 +236,15 @@ impl Vault {
         None
     }
 
+    fn vote_for_action(&mut self, action: ConsensusAction) -> Option<Action> {
+        self.routing_node.vote_for(utils::serialise(&action));
+        None
+    }
+
     fn handle_action(&mut self, action: Action) -> Option<Action> {
         use Action::*;
         match action {
+            ConsensusVote(action) => self.vote_for_action(action),
             ForwardClientRequest(rpc) => self.forward_client_request(rpc),
             ProxyClientRequest(rpc) => self.proxy_client_request(rpc),
             RespondToOurDataHandlers { sender, rpc } => {
@@ -257,8 +300,12 @@ impl Vault {
             match utils::destination_address(&request) {
                 Some(address) => address,
                 None => {
-                    error!("{}: Logic error - no data handler address available.", self);
-                    return None;
+                    if let Request::InsAuthKey { .. } | Request::DelAuthKey { .. } = request {
+                        Cow::Borrowed(self.id.public_id().name())
+                    } else {
+                        error!("{}: Logic error - no data handler address available.", self);
+                        return None;
+                    }
                 }
             }
         } else {
@@ -288,6 +335,18 @@ impl Vault {
                 }
                 | Rpc::Request {
                     request: Request::TransferCoins { .. },
+                    ..
+                }
+                | Rpc::Request {
+                    request: Request::UpdateLoginPacket(..),
+                    ..
+                }
+                | Rpc::Request {
+                    request: Request::InsAuthKey { .. },
+                    ..
+                }
+                | Rpc::Request {
+                    request: Request::DelAuthKey { .. },
                     ..
                 } => self
                     .client_handler_mut()?
