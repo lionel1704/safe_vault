@@ -12,7 +12,7 @@ use crate::{
     client_handler::ClientHandler,
     coins_handler::CoinsHandler,
     data_handler::DataHandler,
-    routing::{Client as ClientEvent, ConnectionInfo, Event as RoutingEvent, Node},
+    routing::{ConnectionInfo, event::Client as ClientEvent, event::Event as RoutingEvent, Node},
     rpc::Rpc,
     utils, Config, Result,
 };
