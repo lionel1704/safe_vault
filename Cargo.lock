@@ -2281,7 +2281,7 @@ dependencies = [
 [[package]]
 name = "routing"
 version = "0.37.0"
-source = "git+https://github.com/maidsafe/routing.git?branch=fleming#9a28bcb208c1347acd91b7b0bd6545a5875f6ae2"
+source = "git+https://github.com/madadam/routing.git?branch=remove-gossip-timer#3139722ce45794486a0f6f9a30131c06ecabcf80"
 dependencies = [
  "bincode 1.1.4",
  "bytes 0.4.12",

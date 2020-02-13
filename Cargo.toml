@@ -31,7 +31,7 @@ quick-error = "~1.2.2"
 rand = "~0.6.5"
 rand_chacha = "~0.1.1"
 routing_rand_core = { package = "rand_core", version = "~0.5.1" }
-routing = { git = "https://github.com/maidsafe/routing.git", branch = "fleming" }
+routing = { git = "https://github.com/madadam/routing.git", branch = "remove-gossip-timer" }
 safe-nd = "~0.8.0"
 self_update = "0.5.1"
 serde = { version = "~1.0.97", features = ["derive"] }
