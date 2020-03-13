@@ -86,7 +86,7 @@ impl IDataHolder {
             .and_then(|idata| match idata {
                 IData::Unpub(ref data) => {
                     if data.owner() != client_pk {
-                        Err(NdError::AccessDenied)
+                        Err(NdError::from("Invalid owner for get unpub IData".to_string()))
                     } else {
                         Ok(idata)
                     }
@@ -121,7 +121,7 @@ impl IDataHolder {
             .and_then(|data| match data {
                 IData::Unpub(ref data) => {
                     if data.owner() != client_pk {
-                        Err(NdError::AccessDenied)
+                        Err(NdError::from("Invalid owner for delete IData".to_string()))
                     } else {
                         Ok(())
                     }

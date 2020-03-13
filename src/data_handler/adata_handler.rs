@@ -355,7 +355,7 @@ impl ADataHandler {
         address: ADataAddress,
         action: ADataAction,
     ) -> Result<AData, NdError> {
-        let requester_key = utils::own_key(requester).ok_or(NdError::AccessDenied)?;
+        let requester_key = utils::own_key(requester).ok_or(NdError::from("Node cannot access data".to_string()))?;
         let data = self.chunks.get(&address).map_err(|error| match error {
             ChunkStoreError::NoSuchChunk => NdError::NoSuchData,
             _ => error.to_string().into(),

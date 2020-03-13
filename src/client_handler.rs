@@ -1524,7 +1524,7 @@ impl ClientHandler {
                 if login_packet.authorised_getter() == requester_pub_key {
                     Ok(login_packet)
                 } else {
-                    Err(NdError::AccessDenied)
+                    Err(NdError::from("Cannot access login packet - key mismatch".to_string()))
                 }
             })
     }
@@ -1693,7 +1693,7 @@ impl ClientHandler {
             AuthorisationKind::MutAndTransferCoins => self.check_app_permissions(app_id, |perms| {
                 perms.transfer_coins && perms.perform_mutations
             }),
-            AuthorisationKind::ManageAppKeys => Err(NdError::AccessDenied),
+            AuthorisationKind::ManageAppKeys => Err(NdError::from("App cannot manage auth".to_string())),
         };
 
         if let Err(error) = result {
@@ -1717,7 +1717,7 @@ impl ClientHandler {
         {
             Ok(())
         } else {
-            Err(NdError::AccessDenied)
+            Err(NdError::from("App does not have sufficient permissions / not authorised".to_string()))
         }
     }
 
