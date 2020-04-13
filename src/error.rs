@@ -80,7 +80,9 @@ quick_error! {
         /// Account doesn't exist.
         NoSuchAccount {}
         /// Logic error.
-        Logic {}
+        Logic(message: String) {
+            display("Login error: {:?}", message)
+        }
     }
 }
 

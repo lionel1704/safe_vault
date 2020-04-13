@@ -121,6 +121,7 @@ impl Environment {
             env.poll()
         }
         let endpoint = env.vaults[0].connection_info();
+        trace!("{:?}", endpoint);
 
         // Create other nodes using the seed node endpoint as bootstrap contact.
         let config = NetworkConfig::node().with_hard_coded_contact(endpoint);
@@ -269,7 +270,6 @@ impl TestVault {
         config.set_root_dir(root_dir.path());
 
         let (command_tx, command_rx) = crossbeam_channel::bounded(0);
-
         let (routing_node, routing_rx, client_rx) = if let Some(network_config) = network_config {
             Node::builder()
                 .network_config(network_config)

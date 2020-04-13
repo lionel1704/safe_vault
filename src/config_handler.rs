@@ -104,7 +104,7 @@ impl Config {
     /// and overrides values with any equivalent command line args.
     pub fn new() -> Result<Self> {
         let mut config = Self::read_from_file()?.unwrap_or_default();
-
+        
         let command_line_args = Config::clap().get_matches();
         for arg in &ARGS {
             let occurrences = command_line_args.occurrences_of(arg);
