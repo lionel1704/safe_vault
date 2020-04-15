@@ -51,6 +51,13 @@ impl ConsensusGroup {
             }
         }
     }
+
+    /// Promote the vaults in the concensus group to elders.
+    pub fn promote_all(&self) {
+        for channel in &self.event_channels {
+            unwrap!(channel.send(Event::Promoted));
+        }
+    }
 }
 
 /// Interface for sending and receiving messages to and from other nodes, in the role of a full routing node.

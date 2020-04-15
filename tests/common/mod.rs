@@ -88,6 +88,8 @@ impl Environment {
             vec![TestVault::new_with_mock_routing(None, &mut rng)]
         };
 
+        consensus_group.borrow().promote_all();
+
         Self {
             rng,
             _seed_printer: SeedPrinter::new(seed),
@@ -269,7 +271,6 @@ impl TestVault {
         config.set_root_dir(root_dir.path());
 
         let (command_tx, command_rx) = crossbeam_channel::bounded(0);
-
         let (routing_node, routing_rx, client_rx) = if let Some(network_config) = network_config {
             Node::builder()
                 .network_config(network_config)
