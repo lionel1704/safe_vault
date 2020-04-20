@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub use routing::{event, NetworkConfig, NetworkEvent, P2pNode, RoutingError};
-
+pub use routing::{event, NetworkEvent, P2pNode, RoutingError, TransportConfig as NetworkConfig, rng::{self, MainRng}};
 use bytes::Bytes;
 use crossbeam_channel::{self as mpmc, Receiver, RecvError, Select, Sender};
 use log::trace;
@@ -58,6 +57,43 @@ impl ConsensusGroup {
             unwrap!(channel.send(Event::Promoted));
         }
     }
+}
+
+/// Node configuration.
+pub struct NodeConfig {
+    /// If true, configures the node to start a new network instead of joining an existing one.
+    pub first: bool,
+    /// The ID of the node or `None` for randomly generated one.
+    pub full_id: Option<FullId>,
+    /// Configuration for the underlying network transport.
+    pub transport_config: NetworkConfig,
+    /// Global network parameters. Must be identical for all nodes in the network.
+    pub network_params: NetworkParams,
+    /// Random number generator to be used by the node. Can be used to achieve repeatable tests by
+    /// providing a pre-seeded RNG. By default uses a random seed provided by the OS.
+    pub rng: MainRng,
+}
+
+impl Default for NodeConfig {
+    fn default() -> Self {
+        Self {
+            first: false,
+            full_id: None,
+            transport_config: TransportConfig::default(),
+            network_params: NetworkParams::default(),
+            rng: rng::new(),
+        }
+    }
+}
+
+
+/// Network parameters: number of elders, safe section size
+#[derive(Clone, Copy, Debug)]
+pub struct NetworkParams {
+    /// The number of elders per section
+    pub elder_size: usize,
+    /// Minimum number of nodes we consider safe in a section
+    pub safe_section_size: usize,
 }
 
 /// Interface for sending and receiving messages to and from other nodes, in the role of a full routing node.

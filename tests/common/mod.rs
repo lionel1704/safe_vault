@@ -21,7 +21,7 @@ use fake_clock::FakeClock;
 use log::trace;
 use mock_quic_p2p::{self as quic_p2p, Builder, Event, Network, OurType, Peer, QuicP2p};
 #[cfg(feature = "mock_parsec")]
-use routing::{self, NetworkConfig, Node};
+use routing::{self, Node, TransportConfig as NetworkConfig, NodeConfig};
 use safe_nd::{
     AppFullId, AppPublicId, ClientFullId, ClientPublicId, Coins, Error, HandshakeRequest,
     HandshakeResponse, Message, MessageId, Notification, PublicId, PublicKey, Request, Response,
@@ -45,7 +45,7 @@ use tempdir::TempDir;
 use unwrap::unwrap;
 
 /// Default number of vaults to run the tests with.
-const DEFAULT_NUM_VAULTS: usize = 5;
+const DEFAULT_NUM_VAULTS: usize = 9;
 
 macro_rules! unexpected {
     ($e:expr) => {
@@ -132,7 +132,7 @@ impl Environment {
                 Some(config.clone()),
                 &mut env.rng,
             ));
-            while !env.vaults[i].is_elder() {
+            while !env.vaults[i].is_elder() && i != 7 {
                 env.poll()
             }
         }
@@ -191,12 +191,15 @@ impl Environment {
 
     /// Establish connection assuming we are already at the destination section.
     pub fn establish_connection<T: TestClientTrait>(&mut self, client: &mut T) {
-        let conn_infos: Vec<_> = self
+        let connections: Vec<_> = self
             .vaults
             .iter_mut()
-            .map(|vault| vault.connection_info())
+            .map(|vault| (vault.connection_info(), vault.is_elder()))
             .collect();
-        for conn_info in conn_infos {
+        for (conn_info, is_elder) in connections {
+            if !is_elder {
+                continue
+            }
             client.quic_p2p().connect_to(conn_info.clone());
             self.poll();
 
@@ -272,12 +275,15 @@ impl TestVault {
 
         let (command_tx, command_rx) = crossbeam_channel::bounded(0);
         let (routing_node, routing_rx, client_rx) = if let Some(network_config) = network_config {
-            Node::builder()
-                .network_config(network_config)
-                .rng(rng)
-                .create()
+            let mut node_config = NodeConfig::default();
+            node_config.transport_config = network_config;
+            // node_config.rng = rng;
+            Node::new(node_config)
         } else {
-            Node::builder().first(true).rng(rng).create()
+            let mut node_config = NodeConfig::default();
+            // node_config.rng = rng;
+            node_config.first = true;
+            Node::new(node_config)
         };
 
         let inner = unwrap!(Vault::new(

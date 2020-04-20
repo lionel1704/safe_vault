@@ -19,11 +19,12 @@ use idata_holder::IDataHolder;
 use idata_op::{IDataOp, IDataRequest, OpType};
 use log::{error, trace};
 use mdata_handler::MDataHandler;
+use routing::Node;
 
 use safe_nd::{IData, IDataAddress, MessageId, NodePublicId, PublicId, Request, Response, XorName};
 
 use std::{
-    cell::Cell,
+    cell::{Cell, RefCell},
     fmt::{self, Display, Formatter},
     rc::Rc,
 };
@@ -43,9 +44,11 @@ impl DataHandler {
         total_used_space: &Rc<Cell<u64>>,
         init_mode: Init,
         is_elder: bool,
+        routing_node: Rc<RefCell<Node>>,
     ) -> Result<Self> {
         let (idata_handler, mdata_handler, adata_handler) = if is_elder {
-            let idata_handler = IDataHandler::new(id.clone(), config, init_mode)?;
+            let idata_handler =
+                IDataHandler::new(id.clone(), config, init_mode, routing_node.clone())?;
             let mdata_handler = MDataHandler::new(id.clone(), config, total_used_space, init_mode)?;
             let adata_handler = ADataHandler::new(id.clone(), config, total_used_space, init_mode)?;
             (

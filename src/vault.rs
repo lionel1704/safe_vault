@@ -11,7 +11,9 @@ use crate::{
     client_handler::ClientHandler,
     coins_handler::CoinsHandler,
     data_handler::DataHandler,
-    routing::{event::Event as RoutingEvent, NetworkEvent as ClientEvent, Node},
+    routing::{
+        event::Event as RoutingEvent, DstLocation, Node, SrcLocation, TransportEvent as ClientEvent,
+    },
     rpc::Rpc,
     utils, Config, Result,
 };
@@ -118,6 +120,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 &total_used_space,
                 init_mode,
                 is_elder,
+                routing_node.clone(),
             )?;
             let coins_handler = CoinsHandler::new(id.public_id().clone(), root_dir, init_mode)?;
             State::Elder {
@@ -134,6 +137,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 &total_used_space,
                 init_mode,
                 false,
+                routing_node.clone(),
             )?;
             State::Adult { data_handler }
         };
@@ -283,6 +287,8 @@ impl<R: CryptoRng + Rng> Vault<R> {
     fn step_routing(&mut self, event: RoutingEvent) {
         info!("Received routing event: {:?}", event);
         let mut maybe_action = self.handle_routing_event(event);
+        let adults = self.routing_node.borrow_mut().our_adults().cloned().collect::<Vec<_>>();
+        info!("Adults: {:?}", &adults);
         while let Some(action) = maybe_action {
             maybe_action = self.handle_action(action);
         }
@@ -317,6 +323,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
             &total_used_space,
             Init::New,
             true,
+            self.routing_node.clone(),
         )?;
         self.state = State::Elder {
             client_handler,
@@ -327,6 +334,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
     }
 
     fn handle_routing_event(&mut self, event: RoutingEvent) -> Option<Action> {
+        info!("Got routing event: {:?}", &event);
         match event {
             RoutingEvent::Consensus(custom_event) => {
                 match bincode::deserialize::<ConsensusAction>(&custom_event) {
@@ -350,6 +358,14 @@ impl<R: CryptoRng + Rng> Vault<R> {
                     None
                 },
             ),
+            RoutingEvent::MessageReceived {
+                content,
+                src,
+                dst
+            } => {
+                info!("Received message: {:?}\n Sent from {:?} to {:?}", content, src, dst);
+                None
+            }
             // Ignore all other events
             _ => None,
         }
@@ -393,8 +409,14 @@ impl<R: CryptoRng + Rng> Vault<R> {
     fn vote_for_action(&mut self, action: &ConsensusAction) -> Option<Action> {
         self.routing_node
             .borrow_mut()
-            .vote_for(utils::serialise(&action));
-        None
+            .vote_for_user_event(utils::serialise(&action))
+            .map_or_else(
+                |_err| {
+                    error!("Vault is not an Elder");
+                    None
+                },
+                |()| None,
+            )
     }
 
     fn handle_action(&mut self, action: Action) -> Option<Action> {
@@ -402,8 +424,8 @@ impl<R: CryptoRng + Rng> Vault<R> {
         use Action::*;
         match action {
             // Bypass client requests
-            // ConsensusVote(action) => self.vote_for_action(&action),
-            ConsensusVote(action) => self.client_handler_mut()?.handle_consensused_action(action),
+            ConsensusVote(action) => self.vote_for_action(&action),
+            // ConsensusVote(action) => self.client_handler_mut()?.handle_consensused_action(action),
             ForwardClientRequest(rpc) => self.forward_client_request(rpc),
             ProxyClientRequest(rpc) => self.proxy_client_request(rpc),
             RespondToOurDataHandlers { sender, rpc } => {
@@ -436,13 +458,28 @@ impl<R: CryptoRng + Rng> Vault<R> {
                         next_action = self
                             .data_handler_mut()?
                             .handle_vault_rpc(sender, rpc.clone());
-                        // } else {
-                        //     Send to target
+                    } else {
+                        next_action = self.send_message_to_peer(target, rpc.clone());
                     }
                 }
                 next_action
             }
         }
+    }
+
+    fn send_message_to_peer(&self, target: XorName, rpc: Rpc) -> Option<Action> {
+        let id = self.routing_node.borrow().id().clone();
+        self.routing_node.borrow_mut().send_message(
+            SrcLocation::Node(id),
+            DstLocation::Node(routing::XorName(target.0)),
+            utils::serialise(&rpc),
+        ).map_or_else(|err| {
+            error!("Unable to send message: {:?}", err);
+            None
+        }, |()| {
+            info!("Sent message to: {:?}", target);
+            None
+        })
     }
 
     fn forward_client_request(&mut self, rpc: Rpc) -> Option<Action> {
