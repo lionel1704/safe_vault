@@ -45,7 +45,7 @@ use tempdir::TempDir;
 use unwrap::unwrap;
 
 /// Default number of vaults to run the tests with.
-const DEFAULT_NUM_VAULTS: usize = 9;
+const DEFAULT_NUM_VAULTS: usize = 10;
 
 macro_rules! unexpected {
     ($e:expr) => {
