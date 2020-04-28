@@ -334,7 +334,6 @@ impl<R: CryptoRng + Rng> Vault<R> {
     }
 
     fn handle_routing_event(&mut self, event: RoutingEvent) -> Option<Action> {
-        info!("Got routing event: {:?}", &event);
         match event {
             RoutingEvent::Consensus(custom_event) => {
                 match bincode::deserialize::<ConsensusAction>(&custom_event) {
@@ -364,7 +363,24 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 dst
             } => {
                 info!("Received message: {:?}\n Sent from {:?} to {:?}", content, src, dst);
-                None
+                match bincode::deserialize::<Rpc>(&content) {
+                    Ok(rpc) => {
+                         if let Rpc::Request {
+                             request,
+                             requester,
+                             message_id
+                         } = &rpc {
+                             self.data_handler_mut()?.handle_vault_rpc(*requester.name(), rpc)
+                         } else {
+                             info!("Message received is not a Rpc::Request. Ignoring.");
+                             None
+                         }
+                    },
+                    Err(e) => {
+                        error!("Error deserializing routing message into Rpc type: {:?}", e);
+                        None
+                    }
+                }
             }
             // Ignore all other events
             _ => None,

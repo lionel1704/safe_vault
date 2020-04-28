@@ -17,7 +17,7 @@ use adata_handler::ADataHandler;
 use idata_handler::IDataHandler;
 use idata_holder::IDataHolder;
 use idata_op::{IDataOp, IDataRequest, OpType};
-use log::{error, trace};
+use log::{error, trace, debug};
 use mdata_handler::MDataHandler;
 use routing::Node;
 
@@ -428,6 +428,7 @@ impl DataHandler {
             // Since the src is the chunk's name, this message was sent by the data handlers to us
             // as a single data handler, implying that we're a data handler chosen to store the
             // chunk.
+            debug!("Idata is being stored");
             self.idata_holder.store_idata(&data, requester, message_id)
         } else {
             self.handle_idata_request(|idata_handler| {

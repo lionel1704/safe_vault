@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub use routing::{event, NetworkEvent, P2pNode, RoutingError, TransportConfig as NetworkConfig, rng::{self, MainRng}};
+pub use routing::{event, NetworkEvent, P2pNode, RoutingError, TransportConfig as NetworkConfig, rng::{self, MainRng}, SrcLocation};
 use bytes::Bytes;
 use crossbeam_channel::{self as mpmc, Receiver, RecvError, Select, Sender};
 use log::trace;
