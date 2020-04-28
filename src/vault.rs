@@ -365,16 +365,41 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 info!("Received message: {:?}\n Sent from {:?} to {:?}", content, src, dst);
                 match bincode::deserialize::<Rpc>(&content) {
                     Ok(rpc) => {
-                         if let Rpc::Request {
-                             request,
-                             requester,
-                             message_id
-                         } = &rpc {
-                             self.data_handler_mut()?.handle_vault_rpc(*requester.name(), rpc)
-                         } else {
-                             info!("Message received is not a Rpc::Request. Ignoring.");
-                             None
-                         }
+                        return match rpc {
+                            Rpc::Request {
+                                request: Request::CreateLoginPacket(_),
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::CreateLoginPacketFor { .. },
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::CreateBalance { .. },
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::TransferCoins { .. },
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::UpdateLoginPacket(..),
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::InsAuthKey { .. },
+                                ..
+                            }
+                            | Rpc::Request {
+                                request: Request::DelAuthKey { .. },
+                                ..
+                            } => self
+                                .client_handler_mut()?
+                                .handle_vault_rpc(utils::get_source_name(src), rpc),
+                            _ => self
+                                .data_handler_mut()?
+                                .handle_vault_rpc(utils::get_source_name(src), rpc),
+                        };
                     },
                     Err(e) => {
                         error!("Error deserializing routing message into Rpc type: {:?}", e);
@@ -448,8 +473,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 // TODO - once Routing is integrated, we'll construct the full message to send
                 //        onwards, and then if we're also part of the data handlers, we'll call that
                 //        same handler which Routing will call after receiving a message.
-
-                self.data_handler_mut()?.handle_vault_rpc(sender, rpc)
+                self.respond_to_data_handlers(sender, rpc)
             }
             RespondToClientHandlers { sender, rpc } => {
                 let client_name = utils::requester_address(&rpc);
@@ -483,17 +507,33 @@ impl<R: CryptoRng + Rng> Vault<R> {
         }
     }
 
-    fn send_message_to_peer(&self, target: XorName, rpc: Rpc) -> Option<Action> {
+    fn respond_to_data_handlers(&self, target: XorName, rpc: Rpc) -> Option<Action> {
         let id = self.routing_node.borrow().id().clone();
+        // let data_handler_name = *utils::requester_address(&rpc);
         self.routing_node.borrow_mut().send_message(
-            SrcLocation::Node(id),
+            SrcLocation::Node(*id.name()),
             DstLocation::Node(routing::XorName(target.0)),
             utils::serialise(&rpc),
         ).map_or_else(|err| {
-            error!("Unable to send message: {:?}", err);
+            error!("Unable to respond to data handler: {:?}", err);
             None
         }, |()| {
-            info!("Sent message to: {:?}", target);
+            info!("Responded to data handler at {:?} with: {:?}", target, &rpc);
+            None
+        })
+    }
+
+    fn send_message_to_peer(&self, target: XorName, rpc: Rpc) -> Option<Action> {
+        let id = self.routing_node.borrow().id().clone();
+        self.routing_node.borrow_mut().send_message(
+            SrcLocation::Node(*id.name()),
+            DstLocation::Node(routing::XorName(target.0)),
+            utils::serialise(&rpc),
+        ).map_or_else(|err| {
+            error!("Unable to send message to Peer: {:?}", err);
+            None
+        }, |()| {
+            info!("Sent message to Peer: {:?}", target);
             None
         })
     }

@@ -424,12 +424,12 @@ impl DataHandler {
         data: IData,
         message_id: MessageId,
     ) -> Option<Action> {
-        if &src == data.name() {
-            // Since the src is the chunk's name, this message was sent by the data handlers to us
+        if matches!(requester, PublicId::Node(_)) {
+            // Since the requester is a node this message was sent by the data handlers to us
             // as a single data handler, implying that we're a data handler chosen to store the
             // chunk.
             debug!("Idata is being stored");
-            self.idata_holder.store_idata(&data, requester, message_id)
+            self.idata_holder.store_idata(&data, requester, src, message_id)
         } else {
             self.handle_idata_request(|idata_handler| {
                 idata_handler.handle_put_idata_req(requester, data, message_id)

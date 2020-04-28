@@ -89,6 +89,15 @@ pub(crate) fn requester_address(rpc: &Rpc) -> &XorName {
     }
 }
 
+/// Returns the requester's public id.
+pub(crate) fn requester_id(rpc: &Rpc) -> &PublicId {
+    match rpc {
+        Rpc::Request { ref requester, .. } | Rpc::Response { ref requester, .. } => {
+            requester
+        }
+    }
+}
+
 /// Returns the address of the destination for `request`.
 pub(crate) fn destination_address(request: &Request) -> Option<Cow<XorName>> {
     use Request::*;
@@ -235,10 +244,10 @@ pub(crate) fn get_refund_for_put<T>(result: &NdResult<T>) -> Option<Coins> {
     }
 }
 
-pub(crate) fn get_source_name(src: SrcLocation) -> routing::XorName  {
-    if let SrcLocation::Node(public_id) = src {
-        public_id.name().clone()
+pub(crate) fn get_source_name(src: SrcLocation) -> XorName  {
+    if let SrcLocation::Node(xorname) = src {
+        XorName(xorname.0)
     } else {
-        routing::XorName::default()
+        XorName::default()
     }
 }

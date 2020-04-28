@@ -69,13 +69,14 @@ impl IDataHandler {
         message_id: MessageId,
     ) -> Option<Action> {
         // We're acting as data handler, received request from client handlers
-        let data_name = *data.name();
+        let our_name = *self.id.name();
+        let idata_handler_id = self.id.clone();
 
         let client_id = requester.clone();
         let respond = |result: NdResult<()>| {
             let refund = utils::get_refund_for_put(&result);
             Some(Action::RespondToClientHandlers {
-                sender: data_name,
+                sender: our_name,
                 rpc: Rpc::Response {
                     requester: client_id,
                     response: Response::Mutation(result),
@@ -108,7 +109,7 @@ impl IDataHandler {
             .take(IMMUTABLE_DATA_COPY_COUNT)
             .cloned()
             .collect::<BTreeSet<_>>();
-        let data_name = *data.name();
+
         let idata_op = IDataOp::new(
             requester.clone(),
             IDataRequest::PutIData(data),
@@ -120,11 +121,11 @@ impl IDataHandler {
             Entry::Vacant(vacant_entry) => {
                 let idata_op = vacant_entry.insert(idata_op);
                 Some(Action::SendToPeers {
-                    sender: data_name,
+                    sender: our_name,
                     targets: target_holders,
                     rpc: Rpc::Request {
                         request: idata_op.request(),
-                        requester,
+                        requester: PublicId::Node(idata_handler_id),
                         message_id,
                     },
                 })
