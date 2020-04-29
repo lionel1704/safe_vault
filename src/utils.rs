@@ -12,10 +12,10 @@ use bincode;
 use log::{error, trace};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use rand::{distributions::Standard, CryptoRng, Rng};
+use routing::SrcLocation;
 use safe_nd::{
     ClientPublicId, Coins, IDataAddress, PublicId, PublicKey, Request, Result as NdResult, XorName,
 };
-use routing::SrcLocation;
 use serde::Serialize;
 use std::{borrow::Cow, fs, path::Path};
 use unwrap::unwrap;
@@ -92,9 +92,7 @@ pub(crate) fn requester_address(rpc: &Rpc) -> &XorName {
 /// Returns the requester's public id.
 pub(crate) fn requester_id(rpc: &Rpc) -> &PublicId {
     match rpc {
-        Rpc::Request { ref requester, .. } | Rpc::Response { ref requester, .. } => {
-            requester
-        }
+        Rpc::Request { ref requester, .. } | Rpc::Response { ref requester, .. } => requester,
     }
 }
 
@@ -244,7 +242,7 @@ pub(crate) fn get_refund_for_put<T>(result: &NdResult<T>) -> Option<Coins> {
     }
 }
 
-pub(crate) fn get_source_name(src: SrcLocation) -> XorName  {
+pub(crate) fn get_source_name(src: SrcLocation) -> XorName {
     if let SrcLocation::Node(xorname) = src {
         XorName(xorname.0)
     } else {

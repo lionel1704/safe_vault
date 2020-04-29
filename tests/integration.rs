@@ -1917,7 +1917,7 @@ fn put_immutable_data() {
     //     Request::PutIData(pub_idata.clone()),
     //     NdError::NoSuchBalance,
     // );
-    // common::send_request_expect_err( 
+    // common::send_request_expect_err(
     //     &mut env,
     //     &mut client_b,
     //     Request::PutIData(unpub_idata.clone()),

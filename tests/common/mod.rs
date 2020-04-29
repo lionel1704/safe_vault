@@ -21,7 +21,7 @@ use fake_clock::FakeClock;
 use log::trace;
 use mock_quic_p2p::{self as quic_p2p, Builder, Event, Network, OurType, Peer, QuicP2p};
 #[cfg(feature = "mock_parsec")]
-use routing::{self, Node, TransportConfig as NetworkConfig, NodeConfig};
+use routing::{self, Node, NodeConfig, TransportConfig as NetworkConfig};
 use safe_nd::{
     AppFullId, AppPublicId, ClientFullId, ClientPublicId, Coins, Error, HandshakeRequest,
     HandshakeResponse, Message, MessageId, Notification, PublicId, PublicKey, Request, Response,
@@ -198,7 +198,7 @@ impl Environment {
             .collect();
         for (conn_info, is_elder) in connections {
             if !is_elder {
-                continue
+                continue;
             }
             client.quic_p2p().connect_to(conn_info.clone());
             self.poll();
