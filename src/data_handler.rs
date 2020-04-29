@@ -17,7 +17,7 @@ use adata_handler::ADataHandler;
 use idata_handler::IDataHandler;
 use idata_holder::IDataHolder;
 use idata_op::{IDataOp, IDataRequest, OpType};
-use log::{error, trace, debug};
+use log::{debug, error, trace};
 use mdata_handler::MDataHandler;
 use routing::Node;
 
@@ -429,7 +429,8 @@ impl DataHandler {
             // as a single data handler, implying that we're a data handler chosen to store the
             // chunk.
             debug!("Idata is being stored");
-            self.idata_holder.store_idata(&data, requester, src, message_id)
+            self.idata_holder
+                .store_idata(&data, requester, src, message_id)
         } else {
             self.handle_idata_request(|idata_handler| {
                 idata_handler.handle_put_idata_req(requester, data, message_id)
@@ -470,10 +471,8 @@ impl DataHandler {
             // The message was sent by the data handlers to us as the one who is supposed to store
             // the chunk. See the sent Get request below.
             debug!("got a match");
-            debug!("Message: {:?}", message_id);
-            let client = self.client_id(&message_id)?.clone();
-            debug!("Client: {:?}", client);
-            self.idata_holder.get_idata(address, &client, src, message_id)
+            self.idata_holder
+                .get_idata(address, requester, src, message_id)
         } else {
             debug!("forwarded the req");
             self.handle_idata_request(|idata_handler| {
@@ -483,8 +482,10 @@ impl DataHandler {
     }
 
     fn client_id(&self, message_id: &MessageId) -> Option<&PublicId> {
+        debug!("getting client id");
         self.idata_handler.as_ref().map_or_else(
             || {
+                debug!("getting client id");
                 trace!("Not applicable for adults");
                 None
             },

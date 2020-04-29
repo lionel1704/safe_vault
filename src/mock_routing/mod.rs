@@ -6,11 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub use routing::{event, NetworkEvent, P2pNode, RoutingError, TransportConfig as NetworkConfig, rng::{self, MainRng}, SrcLocation};
 use bytes::Bytes;
 use crossbeam_channel::{self as mpmc, Receiver, RecvError, Select, Sender};
 use log::trace;
 use mock_quic_p2p::{self as quic_p2p, Peer, QuicP2p, QuicP2pError};
+pub use routing::{
+    event,
+    rng::{self, MainRng},
+    NetworkEvent, P2pNode, RoutingError, SrcLocation, TransportConfig as NetworkConfig,
+};
 use routing::{event::Event, XorName};
 use std::{
     cell::RefCell,
@@ -85,7 +89,6 @@ impl Default for NodeConfig {
         }
     }
 }
-
 
 /// Network parameters: number of elders, safe section size
 #[derive(Clone, Copy, Debug)]

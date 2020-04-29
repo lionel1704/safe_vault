@@ -8,11 +8,11 @@
 
 use super::{IDataOp, IDataRequest, OpType};
 use crate::{action::Action, rpc::Rpc, utils, vault::Init, Config, Result, ToDbKey};
-use log::{trace, warn, info};
+use log::{info, trace, warn};
 use pickledb::PickleDb;
 use routing::Node;
 use safe_nd::{
-    Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response,
+    Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, PublicKey, Response,
     Result as NdResult, XorName,
 };
 use serde::{Deserialize, Serialize};
@@ -28,9 +28,10 @@ const FULL_ADULTS_DB_NAME: &str = "full_adults.db";
 // The number of separate copies of an ImmutableData chunk which should be maintained.
 const IMMUTABLE_DATA_COPY_COUNT: usize = 3;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 struct ChunkMetadata {
     holders: BTreeSet<XorName>,
+    owner: Option<PublicKey>,
 }
 
 pub(super) struct IDataHandler {
@@ -209,6 +210,13 @@ impl IDataHandler {
             Err(error) => return respond(Err(error)),
         };
 
+        if let Some(data_owner) = metadata.owner {
+            let request_key = utils::own_key(&requester)?;
+            if data_owner != *request_key {
+                return respond(Err(NdError::AccessDenied));
+            }
+        };
+
         let idata_op = IDataOp::new(
             requester.clone(),
             IDataRequest::GetIData(address),
@@ -272,10 +280,27 @@ impl IDataHandler {
 
         // TODO - we'll assume `result` is success for phase 1.
         let db_key = idata_address.to_db_key();
+
+        info!("Storing Metadata");
+
         let mut metadata = self
             .metadata
             .get::<ChunkMetadata>(&db_key)
             .unwrap_or_default();
+
+        let idata_op = self.idata_op(&message_id);
+        let idata_owner = match idata_op {
+            None => None,
+            Some(idataops) => Some(utils::own_key(idataops.client())?),
+        };
+
+        if let Some(public_key) = idata_owner {
+            metadata.owner = Some(*public_key);
+        };
+
+        info!("{:?}", idata_owner);
+        info!("Metadata {:?}", metadata);
+
         if !metadata.holders.insert(sender) {
             warn!(
                 "{}: {} already registered as a holder for {:?}",
@@ -284,6 +309,7 @@ impl IDataHandler {
                 self.idata_op(&message_id)?
             );
         }
+
         if let Err(error) = self.metadata.set(&db_key, &metadata) {
             warn!("{}: Failed to write metadata to DB: {:?}", self, error);
             // TODO - send failure back to client handlers (hopefully won't accumulate), or
@@ -439,7 +465,8 @@ impl IDataHandler {
     // Returns an iterator over all of our section's non-full adults' names, sorted by closest to
     // `target`.
     fn non_full_adults_sorted(&self, _target: &XorName) -> Vec<XorName> {
-        let list = self.routing_node
+        let list = self
+            .routing_node
             .borrow_mut()
             .our_adults()
             .map(|p2p_node| XorName(p2p_node.name().0))

@@ -9,9 +9,11 @@
 use crate::{
     action::Action, chunk_store::ImmutableChunkStore, rpc::Rpc, utils, vault::Init, Config, Result,
 };
-use log::{error, info, debug};
+use log::{debug, error, info};
 
-use safe_nd::{Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName};
+use safe_nd::{
+    Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName,
+};
 
 use std::{
     cell::Cell,
@@ -76,32 +78,21 @@ impl IDataHolder {
     pub(super) fn get_idata(
         &self,
         address: IDataAddress,
-        client: &PublicId,
+        requester: PublicId,
         source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
         debug!("Getting the IData");
-        let client_pk = utils::own_key(client)?;
         let result = self
             .chunks
             .get(&address)
-            .map_err(|error| error.to_string().into())
-            .and_then(|idata| match idata {
-                IData::Unpub(ref data) => {
-                    if data.owner() != client_pk {
-                        Err(NdError::AccessDenied)
-                    } else {
-                        Ok(idata)
-                    }
-                }
-                _ => Ok(idata),
-            });
-        
+            .map_err(|error| error.to_string().into());
+
         debug!("IData result : {:?}", result);
         Some(Action::RespondToOurDataHandlers {
             sender: source,
             rpc: Rpc::Response {
-                requester: client.clone(),
+                requester,
                 response: Response::GetIData(result),
                 message_id,
                 refund: None,
