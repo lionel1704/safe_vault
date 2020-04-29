@@ -8,7 +8,7 @@
 
 use super::{IDataOp, IDataRequest, OpType};
 use crate::{action::Action, rpc::Rpc, utils, vault::Init, Config, Result, ToDbKey};
-use log::{trace, warn};
+use log::{trace, warn, info};
 use pickledb::PickleDb;
 use routing::Node;
 use safe_nd::{
@@ -185,10 +185,15 @@ impl IDataHandler {
         address: IDataAddress,
         message_id: MessageId,
     ) -> Option<Action> {
+        info!("Getting the IData Req");
+
+        let our_name = *self.id.name();
+        let idata_handler_id = self.id.clone();
+
         let client_id = requester.clone();
         let respond = |result: NdResult<IData>| {
             Some(Action::RespondToClientHandlers {
-                sender: *address.name(),
+                sender: our_name,
                 rpc: Rpc::Response {
                     requester: client_id,
                     response: Response::GetIData(result),
@@ -214,11 +219,11 @@ impl IDataHandler {
             Entry::Vacant(vacant_entry) => {
                 let idata_op = vacant_entry.insert(idata_op);
                 Some(Action::SendToPeers {
-                    sender: *address.name(),
+                    sender: our_name,
                     targets: metadata.holders,
                     rpc: Rpc::Request {
                         request: idata_op.request(),
-                        requester,
+                        requester: PublicId::Node(idata_handler_id),
                         message_id,
                     },
                 })

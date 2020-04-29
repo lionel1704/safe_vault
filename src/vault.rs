@@ -365,6 +365,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 info!("Received message: {:?}\n Sent from {:?} to {:?}", content, src, dst);
                 match bincode::deserialize::<Rpc>(&content) {
                     Ok(rpc) => {
+                        info!("rpc in vault: {:?} ", rpc);
                         return match rpc {
                             Rpc::Request {
                                 request: Request::CreateLoginPacket(_),
@@ -408,7 +409,10 @@ impl<R: CryptoRng + Rng> Vault<R> {
                 }
             }
             // Ignore all other events
-            _ => None,
+            _ => {
+                info!("Ignored");
+                None
+            },
         }
     }
 

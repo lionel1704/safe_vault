@@ -9,7 +9,7 @@
 use crate::{
     action::Action, chunk_store::ImmutableChunkStore, rpc::Rpc, utils, vault::Init, Config, Result,
 };
-use log::{error, info};
+use log::{error, info, debug};
 
 use safe_nd::{Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName};
 
@@ -77,8 +77,10 @@ impl IDataHolder {
         &self,
         address: IDataAddress,
         client: &PublicId,
+        source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
+        debug!("Getting the IData");
         let client_pk = utils::own_key(client)?;
         let result = self
             .chunks
@@ -94,9 +96,10 @@ impl IDataHolder {
                 }
                 _ => Ok(idata),
             });
-
+        
+        debug!("IData result : {:?}", result);
         Some(Action::RespondToOurDataHandlers {
-            sender: *self.id.name(),
+            sender: source,
             rpc: Rpc::Response {
                 requester: client.clone(),
                 response: Response::GetIData(result),
