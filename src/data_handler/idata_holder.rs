@@ -9,7 +9,7 @@
 use crate::{
     action::Action, chunk_store::ImmutableChunkStore, rpc::Rpc, utils, vault::Init, Config, Result,
 };
-use log::{debug, error, info};
+use log::{error, info};
 
 use safe_nd::{
     Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName,
@@ -82,13 +82,11 @@ impl IDataHolder {
         source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
-        debug!("Getting the IData");
         let result = self
             .chunks
             .get(&address)
             .map_err(|error| error.to_string().into());
 
-        debug!("IData result : {:?}", result);
         Some(Action::RespondToOurDataHandlers {
             sender: source,
             rpc: Rpc::Response {
@@ -103,42 +101,38 @@ impl IDataHolder {
     pub(super) fn delete_unpub_idata(
         &mut self,
         address: IDataAddress,
-        client: &PublicId,
+        requester: PublicId,
+        source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
-        let client_pk = utils::own_key(&client)?;
-
-        // First we need to read the chunk to verify the permissions
-        let result = self
-            .chunks
-            .get(&address)
-            .map_err(|error| error.to_string().into())
-            .and_then(|data| match data {
-                IData::Unpub(ref data) => {
-                    if data.owner() != client_pk {
-                        Err(NdError::AccessDenied)
-                    } else {
-                        Ok(())
+        let result = if self.chunks.has(&address) {
+            self.chunks
+                .get(&address)
+                .map_err(|error| error.to_string().into())
+                .and_then(|data| match data {
+                    IData::Unpub(ref _data) => Ok(()),
+                    _ => {
+                        error!(
+                            "{}: Invalid DeleteUnpub(IData::Pub) encountered: {:?}",
+                            self, message_id
+                        );
+                        Err(NdError::InvalidOperation)
                     }
-                }
-                _ => {
-                    error!(
-                        "{}: Invalid DeleteUnpub(IData::Pub) encountered: {:?}",
-                        self, message_id
-                    );
-                    Err(NdError::InvalidOperation)
-                }
-            })
-            .and_then(|_| {
-                self.chunks
-                    .delete(&address)
-                    .map_err(|error| error.to_string().into())
-            });
+                })
+                .and_then(|_| {
+                    self.chunks
+                        .delete(&address)
+                        .map_err(|error| error.to_string().into())
+                })
+        } else {
+            info!("{}: Immutable chunk doesn't exist: {:?}", self, address);
+            Ok(())
+        };
 
         Some(Action::RespondToOurDataHandlers {
-            sender: *self.id.name(),
+            sender: source,
             rpc: Rpc::Response {
-                requester: client.clone(),
+                requester,
                 response: Response::Mutation(result),
                 message_id,
                 refund: None,

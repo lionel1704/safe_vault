@@ -428,7 +428,6 @@ impl DataHandler {
             // Since the requester is a node this message was sent by the data handlers to us
             // as a single data handler, implying that we're a data handler chosen to store the
             // chunk.
-            debug!("Idata is being stored");
             self.idata_holder
                 .store_idata(&data, requester, src, message_id)
         } else {
@@ -445,13 +444,12 @@ impl DataHandler {
         address: IDataAddress,
         message_id: MessageId,
     ) -> Option<Action> {
-        if &src == address.name() {
+        if matches!(requester, PublicId::Node(_)) {
             // Since the src is the chunk's name, this message was sent by the data handlers to us
             // as a single data handler, implying that we're a data handler where the chunk is
             // stored.
-            let client = self.client_id(&message_id)?.clone();
             self.idata_holder
-                .delete_unpub_idata(address, &client, message_id)
+                .delete_unpub_idata(address, requester, src, message_id)
         } else {
             // We're acting as data handler, received request from client handlers
             self.handle_idata_request(|idata_handler| {
@@ -470,11 +468,9 @@ impl DataHandler {
         if matches!(requester, PublicId::Node(_)) {
             // The message was sent by the data handlers to us as the one who is supposed to store
             // the chunk. See the sent Get request below.
-            debug!("got a match");
             self.idata_holder
                 .get_idata(address, requester, src, message_id)
         } else {
-            debug!("forwarded the req");
             self.handle_idata_request(|idata_handler| {
                 idata_handler.handle_get_idata_req(requester, address, message_id)
             })
