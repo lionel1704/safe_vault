@@ -13,6 +13,7 @@ use rand::{distributions::Standard, CryptoRng, Rng};
 use safe_nd::{
     ClientPublicId, Coins, IDataAddress, PublicId, PublicKey, Request, Result as NdResult, XorName,
 };
+use routing::SrcLocation;
 use serde::Serialize;
 use std::{borrow::Cow, fs, path::Path};
 use unwrap::unwrap;
@@ -229,5 +230,13 @@ pub(crate) fn get_refund_for_put<T>(result: &NdResult<T>) -> Option<Coins> {
         Some(COST_OF_PUT)
     } else {
         None
+    }
+}
+
+pub(crate) fn get_source_name(src: SrcLocation) -> XorName  {
+    if let SrcLocation::Node(xorname) = src {
+        XorName(xorname.0)
+    } else {
+        XorName::default()
     }
 }
