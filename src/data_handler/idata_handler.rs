@@ -140,10 +140,12 @@ impl IDataHandler {
         address: IDataAddress,
         message_id: MessageId,
     ) -> Option<Action> {
+        let our_name = *self.id.name();
+        let idata_handler_id = self.id.clone();
         let client_id = requester.clone();
         let respond = |result: NdResult<()>| {
             Some(Action::RespondToClientHandlers {
-                sender: *address.name(),
+                sender: our_name,
                 rpc: Rpc::Response {
                     requester: client_id,
                     response: Response::Mutation(result),
@@ -159,21 +161,29 @@ impl IDataHandler {
             Err(error) => return respond(Err(error)),
         };
 
+        if let Some(data_owner) = metadata.owner {
+            let request_key = utils::own_key(&requester)?;
+            if data_owner != *request_key {
+                return respond(Err(NdError::AccessDenied));
+            }
+        };
+
         let idata_op = IDataOp::new(
             requester.clone(),
             IDataRequest::DeleteUnpubIData(address),
             metadata.holders.clone(),
         );
+
         match self.idata_ops.entry(message_id) {
             Entry::Occupied(_) => respond(Err(NdError::DuplicateMessageId)),
             Entry::Vacant(vacant_entry) => {
                 let idata_op = vacant_entry.insert(idata_op);
                 Some(Action::SendToPeers {
-                    sender: *address.name(),
+                    sender: our_name,
                     targets: metadata.holders,
                     rpc: Rpc::Request {
                         request: idata_op.request(),
-                        requester,
+                        requester: PublicId::Node(idata_handler_id),
                         message_id,
                     },
                 })

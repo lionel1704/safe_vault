@@ -442,13 +442,12 @@ impl DataHandler {
         address: IDataAddress,
         message_id: MessageId,
     ) -> Option<Action> {
-        if &src == address.name() {
-            // Since the src is the chunk's name, this message was sent by the data handlers to us
+        if matches!(requester, PublicId::Node(_)) {
+            // Since the requester is a node, this message was sent by the data handlers to us
             // as a single data handler, implying that we're a data handler where the chunk is
             // stored.
-            let client = self.client_id(&message_id)?.clone();
             self.idata_holder
-                .delete_unpub_idata(address, &client, message_id)
+                .delete_unpub_idata(address, requester, src, message_id)
         } else {
             // We're acting as data handler, received request from client handlers
             self.handle_idata_request(|idata_handler| {
@@ -474,16 +473,6 @@ impl DataHandler {
                 idata_handler.handle_get_idata_req(requester, address, message_id)
             })
         }
-    }
-
-    fn client_id(&self, message_id: &MessageId) -> Option<&PublicId> {
-        self.idata_handler.as_ref().map_or_else(
-            || {
-                trace!("Not applicable for adults");
-                None
-            },
-            |idata_handler| idata_handler.idata_op(message_id).map(IDataOp::client),
-        )
     }
 }
 
