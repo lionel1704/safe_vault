@@ -9,7 +9,7 @@
 pub use routing::{
     event,
     rng::{self, MainRng},
-    FullId, P2pNode, RoutingError, SrcLocation, TransportConfig, TransportEvent, DstLocation
+    DstLocation, FullId, P2pNode, RoutingError, SrcLocation, TransportConfig, TransportEvent,
 };
 
 use bytes::Bytes;
@@ -133,7 +133,7 @@ impl Node {
             None
         };
 
-        let id  = if let Some(id) = config.full_id {
+        let id = if let Some(id) = config.full_id {
             id
         } else {
             FullId::gen(&mut rng::new())
@@ -172,15 +172,18 @@ impl Node {
         vec![].into_iter()
     }
 
-
     pub fn id(&self) -> &routing::PublicId {
         self.id.public_id()
     }
 
-    pub fn send_message(&mut self, src: SrcLocation, dst: DstLocation, contents: Vec<u8>) -> Result<(), RoutingError> {
+    pub fn send_message(
+        &mut self,
+        src: SrcLocation,
+        dst: DstLocation,
+        contents: Vec<u8>,
+    ) -> Result<(), RoutingError> {
         Ok(())
     }
-
 
     /// Vote for an event.
     pub fn vote_for_user_event(&mut self, event: Vec<u8>) -> Result<(), RoutingError> {
