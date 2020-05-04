@@ -11,7 +11,9 @@ use crate::{
 };
 use log::{error, info};
 
-use safe_nd::{Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName};
+use safe_nd::{
+    Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName,
+};
 
 use std::{
     cell::Cell,

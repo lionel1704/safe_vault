@@ -10,7 +10,9 @@ use crate::{
     action::{Action, ConsensusAction},
     client_handler::ClientHandler,
     data_handler::DataHandler,
-    routing::{event::Event as RoutingEvent, Node, TransportEvent as ClientEvent, SrcLocation, DstLocation},
+    routing::{
+        event::Event as RoutingEvent, DstLocation, Node, SrcLocation, TransportEvent as ClientEvent,
+    },
     rpc::Rpc,
     utils, Config, Result,
 };
@@ -342,12 +344,11 @@ impl<R: CryptoRng + Rng> Vault<R> {
                     None
                 },
             ),
-            RoutingEvent::MessageReceived {
-                content,
-                src,
-                dst
-            } => {
-                info!("Received message: {:?}\n Sent from {:?} to {:?}", content, src, dst);
+            RoutingEvent::MessageReceived { content, src, dst } => {
+                info!(
+                    "Received message: {:?}\n Sent from {:?} to {:?}",
+                    content, src, dst
+                );
                 self.handle_routing_message(src, content)
             }
             // Ignore all other events
@@ -393,7 +394,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                         .data_handler_mut()?
                         .handle_vault_rpc(utils::get_source_name(src), rpc),
                 };
-            },
+            }
             Err(e) => {
                 error!("Error deserializing routing message into Rpc type: {:?}", e);
                 None
@@ -488,7 +489,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
                         next_action = self
                             .data_handler_mut()?
                             .handle_vault_rpc(sender, rpc.clone());
-                        } else {
+                    } else {
                         next_action = self.send_message_to_peer(target, rpc.clone());
                     }
                 }
@@ -507,32 +508,44 @@ impl<R: CryptoRng + Rng> Vault<R> {
 
     fn respond_to_data_handlers(&self, target: XorName, rpc: Rpc) -> Option<Action> {
         let name = *self.routing_node.borrow().id().name();
-        self.routing_node.borrow_mut().send_message(
-            SrcLocation::Node(name),
-            DstLocation::Node(routing::XorName(target.0)),
-            utils::serialise(&rpc),
-        ).map_or_else(|err| {
-            error!("Unable to respond to data handler: {:?}", err);
-            None
-        }, |()| {
-            info!("Responded to data handler at {:?} with: {:?}", target, &rpc);
-            None
-        })
+        self.routing_node
+            .borrow_mut()
+            .send_message(
+                SrcLocation::Node(name),
+                DstLocation::Node(routing::XorName(target.0)),
+                utils::serialise(&rpc),
+            )
+            .map_or_else(
+                |err| {
+                    error!("Unable to respond to data handler: {:?}", err);
+                    None
+                },
+                |()| {
+                    info!("Responded to data handler at {:?} with: {:?}", target, &rpc);
+                    None
+                },
+            )
     }
 
     fn send_message_to_peer(&self, target: XorName, rpc: Rpc) -> Option<Action> {
         let id = self.routing_node.borrow().id().clone();
-        self.routing_node.borrow_mut().send_message(
-            SrcLocation::Node(*id.name()),
-            DstLocation::Node(routing::XorName(target.0)),
-            utils::serialise(&rpc),
-        ).map_or_else(|err| {
-            error!("Unable to send message to Peer: {:?}", err);
-            None
-        }, |()| {
-            info!("Sent message to Peer: {:?}", target);
-            None
-        })
+        self.routing_node
+            .borrow_mut()
+            .send_message(
+                SrcLocation::Node(*id.name()),
+                DstLocation::Node(routing::XorName(target.0)),
+                utils::serialise(&rpc),
+            )
+            .map_or_else(
+                |err| {
+                    error!("Unable to send message to Peer: {:?}", err);
+                    None
+                },
+                |()| {
+                    info!("Sent message to Peer: {:?}", target);
+                    None
+                },
+            )
     }
 
     fn forward_client_request(&mut self, rpc: Rpc) -> Option<Action> {
