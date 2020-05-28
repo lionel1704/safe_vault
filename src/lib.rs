@@ -42,13 +42,6 @@ mod vault;
 
 pub(crate) use to_db_key::ToDbKey;
 
-/// Mock version of Routing
-#[cfg(feature = "mock")]
-pub mod mock_routing;
-
-#[cfg(feature = "mock")]
-pub use crate::mock_routing as routing;
-#[cfg(not(feature = "mock"))]
 pub use routing;
 
 pub use crate::{
