@@ -11,9 +11,7 @@ use crate::{
 };
 use log::{error, info};
 
-use safe_nd::{
-    Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response, XorName,
-};
+use safe_nd::{Error as NdError, IData, IDataAddress, MessageId, NodePublicId, PublicId, Response};
 
 use std::{
     cell::Cell,
@@ -48,7 +46,7 @@ impl IDataHolder {
         &mut self,
         data: &IData,
         requester: PublicId,
-        source: XorName,
+        // source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
         let result = if self.chunks.has(data.address()) {
@@ -67,7 +65,7 @@ impl IDataHolder {
         let refund = utils::get_refund_for_put(&result);
         Some(Action::RespondToOurDataHandlers {
             // this is actually the target
-            target: source,
+            // target: source,
             rpc: Rpc::Response {
                 requester,
                 response: Response::Mutation(result),
@@ -81,7 +79,7 @@ impl IDataHolder {
         &self,
         address: IDataAddress,
         requester: PublicId,
-        source: XorName,
+        // source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
         let result = self
@@ -90,7 +88,7 @@ impl IDataHolder {
             .map_err(|error| error.to_string().into());
 
         Some(Action::RespondToOurDataHandlers {
-            target: source,
+            // target: source,
             rpc: Rpc::Response {
                 requester,
                 response: Response::GetIData(result),
@@ -104,7 +102,7 @@ impl IDataHolder {
         &mut self,
         address: IDataAddress,
         requester: PublicId,
-        source: XorName,
+        // source: XorName,
         message_id: MessageId,
     ) -> Option<Action> {
         let result = if self.chunks.has(&address) {
@@ -132,7 +130,7 @@ impl IDataHolder {
         };
 
         Some(Action::RespondToOurDataHandlers {
-            target: source,
+            // target: source,
             rpc: Rpc::Response {
                 requester,
                 response: Response::Mutation(result),

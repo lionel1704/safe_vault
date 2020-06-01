@@ -12,13 +12,14 @@ mod idata_holder;
 mod idata_op;
 mod mdata_handler;
 
-use crate::{action::Action, routing::Node, rpc::Rpc, vault::Init, Config, Result};
+use crate::{action::Action, rpc::Rpc, utils, vault::Init, Config, Result};
 use adata_handler::ADataHandler;
 use idata_handler::IDataHandler;
 use idata_holder::IDataHolder;
 use idata_op::{IDataOp, OpType};
 use log::{error, trace};
 use mdata_handler::MDataHandler;
+use routing::{Node, SrcLocation};
 
 use safe_nd::{IDataRequest, MessageId, NodePublicId, PublicId, Request, Response, XorName};
 
@@ -67,7 +68,7 @@ impl DataHandler {
         })
     }
 
-    pub fn handle_vault_rpc(&mut self, src: XorName, rpc: Rpc) -> Option<Action> {
+    pub fn handle_vault_rpc(&mut self, src: SrcLocation, rpc: Rpc) -> Option<Action> {
         match rpc {
             Rpc::Request {
                 request,
@@ -78,20 +79,20 @@ impl DataHandler {
                 response,
                 message_id,
                 ..
-            } => self.handle_response(src, response, message_id),
+            } => self.handle_response(utils::get_source_name(src), response, message_id),
         }
     }
 
     fn handle_request(
         &mut self,
-        src: XorName,
+        src: SrcLocation,
         requester: PublicId,
         request: Request,
         message_id: MessageId,
     ) -> Option<Action> {
         use Request::*;
         trace!(
-            "{}: Received ({:?} {:?}) from src {} (client {:?})",
+            "{}: Received ({:?} {:?}) from src {:?} (client {:?})",
             self,
             request,
             message_id,
@@ -102,12 +103,11 @@ impl DataHandler {
             IData(idata_req) => {
                 match idata_req {
                     IDataRequest::Put(data) => {
-                        if matches!(requester, PublicId::Node(_)) {
-                            // Since the requester is a node, this message was sent by the data handlers to us
+                        if matches!(src, SrcLocation::Section(_)) {
+                            // Since the requester is a section, this message was sent by the data handlers to us
                             // as a single data handler, implying that we're a data holder chosen to store the
                             // chunk.
-                            self.idata_holder
-                                .store_idata(&data, requester, src, message_id)
+                            self.idata_holder.store_idata(&data, requester, message_id)
                         } else {
                             self.handle_idata_request(|idata_handler| {
                                 idata_handler.handle_put_idata_req(requester, data, message_id)
@@ -115,12 +115,11 @@ impl DataHandler {
                         }
                     }
                     IDataRequest::Get(address) => {
-                        if matches!(requester, PublicId::Node(_)) {
-                            // Since the requester is a node, this message was sent by the data handlers to us
+                        if matches!(src, SrcLocation::Section(_)) {
+                            // Since the requester is a section, this message was sent by the data handlers to us
                             // as a single data handler, implying that we're a data holder where the chunk is
                             // stored.
-                            self.idata_holder
-                                .get_idata(address, requester, src, message_id)
+                            self.idata_holder.get_idata(address, requester, message_id)
                         } else {
                             self.handle_idata_request(|idata_handler| {
                                 idata_handler.handle_get_idata_req(requester, address, message_id)
@@ -128,12 +127,12 @@ impl DataHandler {
                         }
                     }
                     IDataRequest::DeleteUnpub(address) => {
-                        if matches!(requester, PublicId::Node(_)) {
+                        if matches!(src, SrcLocation::Section(_)) {
                             // Since the requester is a node, this message was sent by the data handlers to us
                             // as a single data handler, implying that we're a data holder where the chunk is
                             // stored.
                             self.idata_holder
-                                .delete_unpub_idata(address, requester, src, message_id)
+                                .delete_unpub_idata(address, requester, message_id)
                         } else {
                             // We're acting as data handler, received request from client handlers
                             self.handle_idata_request(|idata_handler| {
@@ -205,29 +204,7 @@ impl DataHandler {
             //
             // ===== Invalid =====
             //
-            GetMData(_)
-            | GetMDataShell(_)
-            | GetMDataVersion(_)
-            | ListMDataEntries(_)
-            | ListMDataKeys(_)
-            | ListMDataValues(_)
-            | ListMDataUserPermissions(_)
-            | ListMDataPermissions(_)
-            | GetMDataValue(_)
-            | GetAData(_)
-            | GetADataValue(_)
-            | GetADataShell(_)
-            | GetADataOwners(_)
-            | GetADataRange(_)
-            | GetADataIndices(_)
-            | GetADataLastEntry(_)
-            | GetADataPermissions(_)
-            | GetPubADataUserPermissions(_)
-            | GetUnpubADataUserPermissions(_)
-            | Transaction(_)
-            | GetBalance(_)
-            | ListAuthKeysAndVersion(_)
-            | GetLoginPacket(_) => {
+            ref _other => {
                 error!(
                     "{}: Should not receive {:?} as a data handler.",
                     self, response
