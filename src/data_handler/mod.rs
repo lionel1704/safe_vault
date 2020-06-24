@@ -245,7 +245,7 @@ impl DataHandler {
                     IDataRequest::Get(address) => {
                         trace!("Got a get request");
                         trace!("{:?}", src);
-                        if src.is_section() || matches!(requester, PublicId::Node(_)) {
+                        if src.is_section() {
                             // Since the requester is a node, this message was sent by the data handlers to us
                             // as a single data handler, implying that we're a data holder where the chunk is
                             // stored.
@@ -253,6 +253,27 @@ impl DataHandler {
                                 &request,
                                 accumulated_signature.as_ref()?,
                             ) {
+                                self.idata_holder.get_idata(
+                                    src,
+                                    address,
+                                    requester,
+                                    message_id,
+                                    request,
+                                    accumulated_signature,
+                                )
+                            } else {
+                                error!("Accumulated signature is invalid!");
+                                None
+                            }
+                        } else if matches!(requester, PublicId::Node(_)) {
+                            if self
+                                .routing_node
+                                .borrow()
+                                .public_key_set()
+                                .ok()?
+                                .public_key()
+                                .verify(accumulated_signature.as_ref()?, utils::serialise(&address))
+                            {
                                 self.idata_holder.get_idata(
                                     src,
                                     address,
@@ -357,9 +378,10 @@ impl DataHandler {
             utils::get_source_name(src),
         );
         if let Some((request, signature)) = proof {
-            if self
-                .validate_section_signature(&request, &signature)
-                .is_none()
+            if !matches!(requester, PublicId::Node(_))
+                && self
+                    .validate_section_signature(&request, &signature)
+                    .is_none()
             {
                 error!("Invalid section signature");
                 return None;
