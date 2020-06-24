@@ -2101,7 +2101,7 @@ dependencies = [
 [[package]]
 name = "routing"
 version = "0.37.0"
-source = "git+https://github.com/maidsafe/routing.git?branch=igd-err#ee8acb8f2ff894cd7a0f50f69fa8bdbec823d0d9"
+source = "git+https://github.com/maidsafe/routing.git?branch=igd-err#2c9311a2c4f41f495e37a1d6e14a0c6aea98f154"
 dependencies = [
  "bincode 1.1.4",
  "bytes 0.5.4",
@@ -2249,6 +2249,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "tempdir",
+ "threshold_crypto",
  "tiny-keccak",
  "unwrap",
 ]

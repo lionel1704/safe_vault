@@ -177,6 +177,7 @@ impl ADataHandler {
                 response: Response::Mutation(result),
                 message_id,
                 refund,
+                proof: None,
             },
         })
     }
@@ -216,6 +217,7 @@ impl ADataHandler {
                 message_id,
                 // Deletion is free so no refund
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -235,6 +237,7 @@ impl ADataHandler {
                 response: Response::GetAData(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -257,6 +260,7 @@ impl ADataHandler {
                 response: Response::GetADataShell(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -279,6 +283,7 @@ impl ADataHandler {
                 response: Response::GetADataRange(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -300,6 +305,7 @@ impl ADataHandler {
                 response: Response::GetADataIndices(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -321,6 +327,7 @@ impl ADataHandler {
                 response: Response::GetADataLastEntry(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -348,6 +355,7 @@ impl ADataHandler {
                 response: Response::GetADataOwners(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -371,6 +379,7 @@ impl ADataHandler {
                 response: Response::GetPubADataUserPermissions(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -394,6 +403,7 @@ impl ADataHandler {
                 response: Response::GetUnpubADataUserPermissions(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -427,6 +437,7 @@ impl ADataHandler {
                 response,
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -449,6 +460,7 @@ impl ADataHandler {
                 response: Response::GetADataValue(result),
                 message_id,
                 refund: None,
+                proof: None,
             },
         })
     }
@@ -642,6 +654,7 @@ impl ADataHandler {
                 response: Response::Mutation(result),
                 message_id,
                 refund,
+                proof: None,
             },
         })
     }
