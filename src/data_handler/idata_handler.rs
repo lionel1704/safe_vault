@@ -612,7 +612,7 @@ impl IDataHandler {
     fn get_holders_for_chunk(&self, target: &XorName) -> Vec<XorName> {
         let routing_node = self.routing_node.borrow_mut();
         let mut closest_adults = routing_node
-            .our_adults_sorted_by_distance_to(&routing::XorName(target.0))
+            .our_adults_sorted_by_distance_to(&xor_name::XorName(target.0))
             .iter()
             .take(IMMUTABLE_DATA_ADULT_COPY_COUNT)
             .map(|p2p_node| XorName(p2p_node.name().0))
@@ -620,7 +620,7 @@ impl IDataHandler {
 
         if closest_adults.len() < IMMUTABLE_DATA_COPY_COUNT {
             let mut closest_elders = routing_node
-                .our_elders_sorted_by_distance_to(&routing::XorName(target.0))
+                .our_elders_sorted_by_distance_to(&xor_name::XorName(target.0))
                 .into_iter()
                 .take(IMMUTABLE_DATA_COPY_COUNT - closest_adults.len())
                 .map(|p2p_node| XorName(p2p_node.name().0))
