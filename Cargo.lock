@@ -1233,7 +1233,7 @@ dependencies = [
 [[package]]
 name = "mock-quic-p2p"
 version = "0.1.0"
-source = "git+https://github.com/maidsafe/quic-p2p#e1d18eca9dc472bb44b6c22a14357e264fb41ba7"
+source = "git+https://github.com/maidsafe/quic-p2p#a1ed4c4284445194caad7728f065ccc851c4e3ba"
 dependencies = [
  "bytes 0.5.5",
  "crossbeam-channel",
@@ -1523,8 +1523,9 @@ dependencies = [
 
 [[package]]
 name = "quic-p2p"
-version = "0.6.2"
-source = "git+https://github.com/maidsafe/quic-p2p#e1d18eca9dc472bb44b6c22a14357e264fb41ba7"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea016023972754185c58c0ce82b51866fc665aac3fa827c0df2477e6845698fc"
 dependencies = [
  "base64 0.10.1",
  "bincode",
@@ -1949,7 +1950,6 @@ dependencies = [
 [[package]]
 name = "routing"
 version = "0.37.0"
-source = "git+https://github.com/maidsafe/routing.git?branch=igd-err#246539f6527b9c1ed78f3f6af4299736b0cd83be"
 dependencies = [
  "bincode",
  "bytes 0.5.5",
