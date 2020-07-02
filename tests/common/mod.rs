@@ -16,11 +16,11 @@ pub use self::rng::TestRng;
 use self::rng::SeedPrinter;
 use bytes::Bytes;
 use crossbeam_channel::{Receiver, Sender};
-#[cfg(feature = "mock_parsec")]
+// #[cfg(feature = "mock_parsec")]
 use fake_clock::FakeClock;
 use log::trace;
-use mock_quic_p2p::{self as quic_p2p, Event, Network, OurType, Peer, QuicP2p};
-#[cfg(feature = "mock_parsec")]
+use quic_p2p::{Event, OurType, Peer, QuicP2p};
+// #[cfg(feature = "mock_parsec")]
 use routing::{self, Node, NodeConfig, TransportConfig as NetworkConfig};
 use safe_nd::{
     AppFullId, AppPublicId, ClientFullId, ClientPublicId, Coins, CoinsRequest, Error,
@@ -51,17 +51,17 @@ macro_rules! unexpected {
 pub struct Environment {
     rng: TestRng,
     _seed_printer: SeedPrinter,
-    network: Network,
+    // network: Network,
     vaults: Vec<TestVault>,
 }
 
 impl Environment {
-    #[cfg(feature = "mock_parsec")]
+    // #[cfg(feature = "mock_parsec")]
     pub fn with_multiple_vaults(num_vaults: usize) -> Self {
         assert!(num_vaults > 1);
 
         logging::init();
-        routing::init_mock();
+        // routing::init_mock();
 
         let seed = rng::get_seed();
         let rng = rng::from_seed(seed);
@@ -69,7 +69,7 @@ impl Environment {
         let mut env = Self {
             rng,
             _seed_printer: SeedPrinter::new(seed),
-            network: Network::new(),
+            // network: Network::new(),
             vaults: Default::default(),
         };
 
@@ -82,7 +82,11 @@ impl Environment {
         let endpoint = env.vaults[0].connection_info();
 
         // Create other nodes using the seed node endpoint as bootstrap contact.
-        let config = NetworkConfig::node().with_hard_coded_contact(endpoint);
+        // let config = NetworkConfig::node().with_hard_coded_contact(endpoint);
+        let mut config = NetworkConfig::default();
+        config.our_type = OurType::Node;
+        config.ip = Some(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
+        let _ = config.hard_coded_contacts.insert(endpoint);
 
         for i in 1..num_vaults {
             env.vaults.push(TestVault::new_with_real_routing(
@@ -90,8 +94,10 @@ impl Environment {
                 &mut env.rng,
             ));
             while !env.vaults[i].is_elder() && i < 7 {
-                env.poll()
+                env.poll();
+                log::info!("Vault {:?} has become an elder", i);
             }
+            log::info!("Done with vault {:?}", i);
         }
 
         env
@@ -105,28 +111,28 @@ impl Environment {
         &mut self.rng
     }
 
-    #[cfg(not(feature = "mock_parsec"))]
+    // #[cfg(not(feature = "mock_parsec"))]
     // Poll the mock network and the environment's vault.
-    pub fn poll(&mut self) {
-        let mut progress = true;
-        while progress {
-            self.network.poll(&mut self.rng);
-            progress = self.vaults.iter_mut().any(|vault| vault.inner.poll());
-        }
-    }
+    // pub fn poll(&mut self) {
+    //     let mut progress = true;
+    //     while progress {
+    //         self.network.poll(&mut self.rng);
+    //         progress = self.vaults.iter_mut().any(|vault| vault.inner.poll());
+    //     }
+    // }
 
-    #[cfg(feature = "mock_parsec")]
+    // #[cfg(feature = "mock_parsec")]
     // Poll the mock network and the environment's vault.
     pub fn poll(&mut self) {
         let mut processed = true;
         while processed {
             processed = false;
-            self.network.poll(&mut self.rng);
+            // self.network.poll(&mut self.rng);
             self.vaults
                 .iter_mut()
                 .for_each(|vault| processed = processed || vault.inner.poll());
             // Advance time for next route/gossip iter, same as used within routing tests.
-            FakeClock::advance_time(1001);
+            // FakeClock::advance_time(1001);
         }
     }
 
@@ -187,13 +193,14 @@ struct TestVault {
 }
 
 impl TestVault {
-    #[cfg(feature = "mock_parsec")]
+    // #[cfg(feature = "mock_parsec")]
     fn new_with_real_routing(network_config: Option<NetworkConfig>, rng: &mut TestRng) -> Self {
         let root_dir = unwrap!(TempDir::new("safe_vault"));
         trace!("creating a test vault at root_dir {:?}", root_dir);
 
         let mut config = Config::default();
         config.set_root_dir(root_dir.path());
+        config.set_local(true);
 
         let (command_tx, command_rx) = crossbeam_channel::bounded(0);
 
@@ -204,6 +211,9 @@ impl TestVault {
         } else {
             let mut node_config = NodeConfig::default();
             node_config.first = true;
+            let mut network_config = NetworkConfig::default();
+            network_config.ip = Some(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
+            node_config.transport_config = network_config;
             Node::new(node_config)
         };
 
@@ -211,7 +221,7 @@ impl TestVault {
             routing_node,
             routing_rx,
             client_rx,
-            &config,
+            &mut config,
             command_rx,
             rng::from_rng(rng),
         ));
@@ -227,7 +237,7 @@ impl TestVault {
         unwrap!(self.inner.our_connection_info())
     }
 
-    #[cfg(feature = "mock_parsec")]
+    // #[cfg(feature = "mock_parsec")]
     fn is_elder(&mut self) -> bool {
         self.inner.is_elder()
     }

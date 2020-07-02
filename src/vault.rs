@@ -84,7 +84,7 @@ impl<R: CryptoRng + Rng> Vault<R> {
         routing_node: Node,
         event_receiver: Receiver<RoutingEvent>,
         client_receiver: Receiver<ClientEvent>,
-        config: &Config,
+        config: &mut Config,
         command_receiver: Receiver<Command>,
         mut rng: R,
     ) -> Result<Self> {
@@ -96,13 +96,17 @@ impl<R: CryptoRng + Rng> Vault<R> {
             (false, id)
         });
 
-        #[cfg(feature = "mock_parsec")]
+        // #[cfg(feature = "mock_parsec")]
         {
             trace!(
                 "creating vault {:?} with routing_id {:?}",
                 id.public_id().name(),
                 routing_node.id()
             );
+        }
+
+        if config.is_local() {
+            config.listen_on_loopback();
         }
 
         let root_dir = config.root_dir()?;

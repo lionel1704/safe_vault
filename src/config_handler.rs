@@ -213,6 +213,11 @@ impl Config {
         self.network_config.ip = Some(IpAddr::V4(Ipv4Addr::LOCALHOST));
     }
 
+    /// Set the `local` flag.
+    pub fn set_local(&mut self, local: bool) {
+        self.local = local;
+    }
+
     fn set_value(&mut self, arg: &str, value: &str) {
         if arg == ARGS[0] {
             self.wallet_address = Some(value.parse().unwrap());

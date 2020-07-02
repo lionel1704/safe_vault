@@ -25,7 +25,7 @@ hex = "~0.3.2"
 hex_fmt = "~0.3.0"
 lazy_static = "1"
 log = "~0.4.7"
-mock-quic-p2p = { git = "https://github.com/maidsafe/quic-p2p", branch = "igd-err", optional = true }
+#quic-p2p = { git = "https://github.com/maidsafe/quic-p2p", branch = "igd-err", optional = true }
 pickledb = "~0.4.0"
 quick-error = "1.2.2"
 rand = "~0.6.5"
@@ -44,11 +44,12 @@ unwrap = "1.2.1"
 [dev_dependencies]
 maplit = "1.0.1"
 tempdir = "~0.3.7"
+quic-p2p = { git = "https://github.com/maidsafe/quic-p2p", branch = "igd-err" }
 
 [[bin]]
 name = "safe_vault"
 doc = false
 
 [features]
-mock_base = ["routing/mock_base", "fxhash", "mock-quic-p2p"]
+mock_base = ["routing/mock_base", "fxhash"]
 mock_parsec = ["routing/mock", "mock_base"]
