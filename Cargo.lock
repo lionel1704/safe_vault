@@ -2424,6 +2424,7 @@ dependencies = [
 [[package]]
 name = "safe-transfers"
 version = "0.1.0"
+source = "git+https://github.com/lionel1704/safe-transfers?branch=test-farming#6488ca545721ec02f8d13940cf02293793888ff9"
 dependencies = [
  "bincode",
  "crdts",
