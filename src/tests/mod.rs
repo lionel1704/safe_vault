@@ -107,11 +107,10 @@ impl Network {
         Self { vaults }
     }
 }
+use safe_core::client::tests::pub_blob_test;
 
-#[test]
-fn start_network() {
+#[tokio::test]
+async fn start_network() {
     let network = Network::new(7);
-    loop {
-
-    }
+    pub_blob_test().await;
 }
