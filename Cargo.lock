@@ -810,6 +810,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "file-per-thread-logger"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b3937f028664bd0e13df401ba49a4567ccda587420365823242977f06609ed1"
+dependencies = [
+ "env_logger 0.7.1",
+ "log 0.4.11",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2440,6 +2450,7 @@ dependencies = [
 [[package]]
 name = "safe_core"
 version = "0.42.1"
+source = "git+https://github.com/lionel1704/safe_client_libs?branch=test-farming#d5cd9592ebcdd76e72dcc64be79aa40fed355a41"
 dependencies = [
  "async-trait",
  "bincode",
@@ -2494,6 +2505,7 @@ dependencies = [
  "ed25519",
  "ed25519-dalek",
  "fake_clock",
+ "file-per-thread-logger",
  "flexi_logger",
  "fxhash",
  "hex",

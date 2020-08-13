@@ -1,11 +1,9 @@
 use safe_core::client::tests;
-use lazy_static::lazy_static;
 use super::Network;
-
 
 #[tokio::test]
 pub async fn pub_blob_test() {
-    let network = Network::new(7);
+    let _network = Network::new(7).await;
     assert!(tests::pub_blob_test().await.is_ok());
 }
 
