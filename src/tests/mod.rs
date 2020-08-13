@@ -21,9 +21,11 @@ struct Network {
 fn init_logging(log_dir: Option<&PathBuf>) {
         // Custom formatter for logs
         let do_format = move |writer: &mut dyn Write, clock: &mut DeferredNow, record: &Record| {
+            let thread = std::thread::current();
             write!(
                 writer,
-                "{} {} [{}:{}] {}",
+                "{} {} {} [{}:{}] {}",
+                thread.name().unwrap_or("Untitled"),
                 record.level(),
                 clock.now().to_rfc3339(),
                 record.file().unwrap_or_default(),
@@ -58,7 +60,7 @@ impl Network {
         node_config.listen_on_loopback();
         let (command_tx, command_rx) = crossbeam_channel::bounded(1);
         let mut genesis_config = node_config.clone();
-        let handle = thread::spawn(move || {
+        let handle = std::thread::Builder::new().name("vault-genesis".to_string()).spawn(move || {
             genesis_config.set_flag("first", 1);
             let path = path.join("genesis-vault");
             genesis_config.set_root_dir(&path);
@@ -76,13 +78,13 @@ impl Network {
             let our_conn_info = node.our_connection_info().expect("Could not get genesis info");
             let _ = write_connection_info(&our_conn_info).unwrap();
             node.run();
-        });
+        }).unwrap();
         vaults.push((command_tx, handle));
         for i in 1..no_of_vaults {
             thread::sleep(std::time::Duration::from_secs(30));
             let (command_tx, command_rx) = crossbeam_channel::bounded(1);
             let mut vault_config = node_config.clone();
-            let handle = thread::spawn(move || {
+            let handle = std::thread::Builder::new().name(format!("Vault-{}", i)).spawn(move || {
                 let vault_path = path.join(format!("vault-{}", i));
                 println!("Starting new vault: {:?}", &vault_path);
                 vault_config.set_root_dir(&vault_path);
@@ -104,7 +106,7 @@ impl Network {
                 let mut node = Node::new(receiver, routing, &vault_config, rand::thread_rng())
                     .expect("Unable to start vault Node");
                 node.run();
-            });
+            }).unwrap();
             vaults.push((command_tx, handle));
         }
         Self { vaults }
