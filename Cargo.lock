@@ -788,8 +788,7 @@ dependencies = [
 [[package]]
 name = "file-per-thread-logger"
 version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b3937f028664bd0e13df401ba49a4567ccda587420365823242977f06609ed1"
+source = "git+https://github.com/lionel1704/file-per-thread-logger?branch=custom-log-format#1b719a0ea28950c2be2ea468f22c316897c6fc6e"
 dependencies = [
  "env_logger 0.7.1",
  "log 0.4.11",
@@ -2257,7 +2256,7 @@ dependencies = [
 [[package]]
 name = "routing"
 version = "0.37.0"
-source = "git+https://github.com/joshuef/routing.git?branch=RandoXor#864c485869651f50ba98d91cbfbe508497cd427d"
+source = "git+https://github.com/lionel1704/routing.git?branch=custom#683caf9c30481ed3c0c607f270b0c85f23fb40e4"
 dependencies = [
  "bincode",
  "bls_dkg",
@@ -2352,7 +2351,7 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 [[package]]
 name = "safe-nd"
 version = "0.10.1"
-source = "git+https://github.com/maidsafe/safe-nd.git?branch=farming#72c595d8de4fea8cf98c6780c184209c6b996f65"
+source = "git+https://github.com/maidsafe/safe-nd.git?branch=farming#79f756468bcaee66560d0aab0d43e018ac665241"
 dependencies = [
  "bincode",
  "crdts",
@@ -2388,7 +2387,7 @@ dependencies = [
 [[package]]
 name = "safe-transfers"
 version = "0.1.0"
-source = "git+https://github.com/maidsafe/safe-transfers.git#2c602ef02a09d3cbb9f005755b941508da44f5ee"
+source = "git+https://github.com/maidsafe/safe-transfers.git#89c6b746ec71dd15ff8e6714d08a79c6bd580384"
 dependencies = [
  "bincode",
  "crdts",
@@ -2404,7 +2403,7 @@ dependencies = [
 [[package]]
 name = "safe_core"
 version = "0.42.1"
-source = "git+https://github.com/oetyng/safe_client_libs?branch=farming#d31121f4007460e8af612646d3541ca730dbcc34"
+source = "git+https://github.com/lionel1704/safe_client_libs?branch=farming#4220587bac5c451c64a3100cceb29b5e023b717c"
 dependencies = [
  "async-trait",
  "bincode",
@@ -3399,7 +3398,7 @@ dependencies = [
 [[package]]
 name = "xor_name"
 version = "1.0.0"
-source = "git+https://github.com/joshuef/xor-name.git?branch=AddRandom#8749265d4fbb18d9505607036cba8b4dccd983ce"
+source = "git+https://github.com/maidsafe/xor-name.git#d3bd81d56cad6cf198c64158bbf231889af72cff"
 dependencies = [
  "log 0.4.11",
  "rand 0.7.3",
