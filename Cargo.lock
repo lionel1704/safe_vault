@@ -1884,7 +1884,7 @@ dependencies = [
 [[package]]
 name = "qp2p"
 version = "0.8.1"
-source = "git+https://github.com/maidsafe/qp2p#4f5d114afee01a7ec327816f7f1550e289f0219d"
+source = "git+https://github.com/maidsafe/qp2p.git#033f70f1e4af811385c241aa84fe8f554e38a4a9"
 dependencies = [
  "base64 0.12.3",
  "bincode",
@@ -2238,7 +2238,7 @@ dependencies = [
 [[package]]
 name = "routing"
 version = "0.37.0"
-source = "git+https://github.com/joshuef/routing?branch=update-quic#69c46493d4f2a636dfc45d2f8865e95ae09e1d29"
+source = "git+https://github.com/bochaco/routing.git?branch=async-quic-p2p-api#5d2dce7728a6eb0926d2f2573bcc802da82454fc"
 dependencies = [
  "bincode",
  "bls_dkg",
@@ -2248,7 +2248,6 @@ dependencies = [
  "ed25519-dalek",
  "err-derive",
  "futures",
- "fxhash",
  "hex_fmt",
  "itertools",
  "log",
