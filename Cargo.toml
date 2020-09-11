@@ -14,7 +14,7 @@ version = "0.24.0"
 # sn_data_types = { path = "../safe-nd" }
 sn_data_types = { git = "https://github.com/maidsafe/sn_data_types.git", branch = "master" }
 sn_transfers = { git = "https://github.com/maidsafe/sn_transfers.git" }
-self_encryption = { git = "https://github.com/joshuef/self_encryption.git", branch = "AllowMutGet" }
+self_encryption = { git = "https://github.com/maidsafe/self_encryption.git", branch = "master" }
 
 [dependencies]
 base64 = "~0.10.1"
@@ -59,10 +59,11 @@ xor_name = "1.1.0"
 [dev_dependencies]
 maplit = "1.0.1"
 tempdir = "~0.3.7"
-safe_core = { git = "https://github.com/maidsafe/safe_client_libs", branch = "master" }
-tokio = { version="~0.2.21", features=["rt-core", "blocking", "stream", "rt-util"] }
+#safe_core = { git = "https://github.com/maidsafe/safe_client_libs", branch = "master" }
+safe_core = { path = "../safe_client_libs" }
+tokio = { version="~0.2.21", features=["rt-core", "blocking", "stream", "rt-util", "rt-threaded"] }
 futures = "~0.3.5"
-file-per-thread-logger = { git = "https://github.com/lionel1704/file-per-thread-logger", branch = "allow-uninitialized" }
+file-per-thread-logger = "0.1.4"
 
 [[bin]]
 name = "safe_vault"

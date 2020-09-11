@@ -25,12 +25,12 @@ fn start_network() {
     });
 }
 
-#[tokio::test]
-#[cfg(feature = "simulated-payouts")]
-async fn money_balance_transfer() {
-    start_network();
-    assert!(client_tests::money_balance_transfer().await.is_ok());
-}
+// #[tokio::test]
+// #[cfg(feature = "simulated-payouts")]
+// async fn money_balance_transfer() {
+//     start_network();
+//     assert!(client_tests::money_balance_transfer().await.is_ok());
+// }
 
 #[tokio::test]
 pub async fn pub_blob_test() {
@@ -142,11 +142,11 @@ pub async fn sequence_pub_permissions_test() {
         .is_ok());
 }
 
-#[tokio::test]
-pub async fn sequence_append_test() {
-    start_network();
-    assert!(sequence_tests::sequence_append_test().await.is_ok());
-}
+// #[tokio::test]
+// pub async fn sequence_append_test() {
+//     start_network();
+//     assert!(sequence_tests::sequence_append_test().await.is_ok());
+// }
 
 #[tokio::test]
 pub async fn sequence_owner_test() {
