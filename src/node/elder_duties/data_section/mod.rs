@@ -21,7 +21,6 @@ use crate::{
 };
 use routing::Prefix;
 use sn_transfers::TransferActor;
-use std::{cell::Cell, rc::Rc};
 use xor_name::XorName;
 use std::sync::{Arc, Mutex};
 
@@ -41,7 +40,7 @@ pub struct DataSection {
 
 impl DataSection {
     ///
-    pub fn new(
+    pub async fn new(
         info: &NodeInfo,
         total_used_space: &Arc<Mutex<u64>>,
         routing: Network,
@@ -51,7 +50,7 @@ impl DataSection {
 
         // Rewards
         let keypair = utils::key_pair(routing.clone())?;
-        let public_key_set = routing.public_key_set()?;
+        let public_key_set = routing.public_key_set().await?;
         let actor = TransferActor::new(keypair, public_key_set, Validator {});
         let rewards = Rewards::new(info.keys.clone(), actor);
 
@@ -62,24 +61,24 @@ impl DataSection {
         })
     }
 
-    pub fn process(&mut self, duty: DataSectionDuty) -> Option<NodeOperation> {
+    pub async fn process(&mut self, duty: DataSectionDuty) -> Option<NodeOperation> {
         use DataSectionDuty::*;
         match duty {
-            RunAsMetadata(duty) => self.metadata.process(duty),
+            RunAsMetadata(duty) => self.metadata.process(duty).await,
             RunAsRewards(duty) => self.rewards.process(duty),
         }
     }
 
     // Transition the section funds account to the new key.
-    pub fn elders_changed(&mut self) -> Option<NodeOperation> {
-        let pub_key_set = self.routing.public_key_set().ok()?;
+    pub async fn elders_changed(&mut self) -> Option<NodeOperation> {
+        let pub_key_set = self.routing.public_key_set().await.ok()?;
         let keypair = utils::key_pair(self.routing.clone()).ok()?;
         let actor = TransferActor::new(keypair, pub_key_set, Validator {});
         self.rewards.transition(actor)
     }
 
     // At section split, all Elders get their reward payout.
-    pub fn section_split(&mut self, prefix: Prefix) -> Option<NodeOperation> {
+    pub async fn section_split(&mut self, prefix: Prefix) -> Option<NodeOperation> {
         // First remove nodes that are no longer in our section.
         let to_remove = self
             .rewards
@@ -90,7 +89,7 @@ impl DataSection {
         self.rewards.remove(to_remove);
 
         // Then payout rewards to all the Elders.
-        let elders = self.routing.our_elder_names();
+        let elders = self.routing.our_elder_names().await;
         self.rewards.payout_rewards(elders)
     }
 
@@ -102,7 +101,7 @@ impl DataSection {
     /// When a relocated node joins, a DataSection
     /// has a few different things to do, such as
     /// pay out rewards and trigger chunk duplication.
-    pub fn relocated_node_joined(
+    pub async fn relocated_node_joined(
         &mut self,
         old_node_id: XorName,
         new_node_id: XorName,
@@ -114,17 +113,17 @@ impl DataSection {
             new_node_id,
             age,
         });
-        let second = self.metadata.trigger_chunk_duplication(new_node_id);
+        let second = self.metadata.trigger_chunk_duplication(new_node_id).await;
         Some(vec![first, second].into())
     }
 
     /// Name of the node
     /// Age of the node
-    pub fn member_left(&mut self, node_id: XorName, _age: u8) -> Option<NodeOperation> {
+    pub async fn member_left(&mut self, node_id: XorName, _age: u8) -> Option<NodeOperation> {
         // marks the reward account as
         // awaiting claiming of the counter
         let first = self.rewards.process(RewardDuty::DeactivateNode(node_id));
-        let second = self.metadata.trigger_chunk_duplication(node_id);
+        let second = self.metadata.trigger_chunk_duplication(node_id).await;
         Some(vec![first, second].into())
     }
 }

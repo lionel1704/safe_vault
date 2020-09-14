@@ -105,13 +105,13 @@ impl<R: CryptoRng + Rng> Node<R> {
     }
 
     /// Returns our connection info.
-    pub fn our_connection_info(&mut self) -> Result<SocketAddr> {
-        self.network_api.our_connection_info().map_err(From::from)
+    pub async fn our_connection_info(&mut self) -> Result<SocketAddr> {
+        self.network_api.our_connection_info().await.map_err(From::from)
     }
 
     /// Returns whether routing node is in elder state.
-    pub fn is_elder(&mut self) -> bool {
-        self.network_api.is_elder()
+    pub async fn is_elder(&mut self) -> bool {
+        self.network_api.is_elder().await
     }
 
     /// Starts the node, and runs the main event loop.
@@ -119,7 +119,7 @@ impl<R: CryptoRng + Rng> Node<R> {
     /// by client sending in a `Command` to free it.
     pub async fn run(&mut self) -> Result<()> {
         let mut event_stream = self.network_api.listen_events().await?;
-        let info = self.network_api.our_connection_info().unwrap();
+        let info = self.network_api.our_connection_info().await.unwrap();
         info!("Listening for routing events at: {}", info);
         while let Some(event) = event_stream.next().await {
             info!("New event received from the Network: {:?}", event);
@@ -162,11 +162,11 @@ impl<R: CryptoRng + Rng> Node<R> {
         match duty {
             RunAsAdult(duty) => {
                 info!("Running as Adult: {:?}", duty);
-                self.duties.adult_duties()?.process(&duty)
+                self.duties.adult_duties()?.process(&duty).await
             }
             RunAsElder(duty) => {
                 info!("Running as Elder: {:?}", duty);
-                self.duties.elder_duties()?.process(duty)
+                self.duties.elder_duties()?.process(duty).await
             }
             RunAsNode(duty) => {
                 info!("Running as Node: {:?}", duty);
