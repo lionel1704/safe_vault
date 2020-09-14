@@ -128,7 +128,8 @@ impl Transfers {
             // Cmd to simulate a farming payout
             SimulatePayout(transfer) => self
                 .replica
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .credit_without_proof(transfer.clone()),
             ValidateTransfer(signed_transfer) => {
                 self.validate(signed_transfer.clone(), msg_id, origin)
@@ -200,7 +201,8 @@ impl Transfers {
         // validate signature
         let result = self
             .replica
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .balance(account_id)
             .ok_or(Error::NoSuchBalance);
         self.wrapping.send(Message::QueryResponse {

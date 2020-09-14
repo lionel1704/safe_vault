@@ -27,8 +27,8 @@ use rand::{CryptoRng, Rng};
 use routing::{Prefix, RoutingError};
 use sn_data_types::AccountId;
 use std::collections::BTreeSet;
-use xor_name::XorName;
 use std::sync::{Arc, Mutex};
+use xor_name::XorName;
 
 /// A Key Section interfaces with clients,
 /// who are essentially a public key,
@@ -107,7 +107,8 @@ impl<R: CryptoRng + Rng> KeySection<R> {
             .copied()
             .collect::<BTreeSet<AccountId>>();
         self.replica_manager
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .drop_accounts(&accounts)
             .ok()?;
         None
@@ -131,7 +132,10 @@ impl<R: CryptoRng + Rng> KeySection<R> {
         let public_key_set = routing.public_key_set().await?;
         let secret_key_share = routing.secret_key_share().await?;
         let key_index = routing.our_index().await?;
-        let proof_chain = routing.our_history().await.ok_or(RoutingError::InvalidState)?;
+        let proof_chain = routing
+            .our_history()
+            .await
+            .ok_or(RoutingError::InvalidState)?;
         let store = TransferStore::new(info.root_dir.clone(), info.init_mode)?;
         let replica_manager = ReplicaManager::new(
             store,
