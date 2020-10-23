@@ -53,7 +53,7 @@ impl RateLimit {
         let available_nodes = (all_nodes - full_nodes) as f64;
         let supply_demand_factor = 0.001
             + (1_f64 / available_nodes).powf(8_f64)
-            + ((full_nodes + 0) as f64 / all_nodes as f64).powf(88_f64);
+            + ((full_nodes) as f64 / all_nodes as f64).powf(88_f64);
         let data_size_factor = (bytes as f64 / MAX_CHUNK_SIZE as f64).powf(2_f64)
             + (bytes as f64 / MAX_CHUNK_SIZE as f64);
         let steepness_reductor = prefix_len as f64 + 1_f64;

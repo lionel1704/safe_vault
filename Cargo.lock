@@ -683,9 +683,9 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.10"
+version = "0.99.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dcfabdab475c16a93d669dddfc393027803e347d09663f524447f642fbb84ba"
+checksum = "41cb0e6161ad61ed084a36ba71fbba9e3ac5aee3606fb607fe08da6acbcf3d8c"
 dependencies = [
  "proc-macro2 1.0.23",
  "quote 1.0.7",
@@ -1509,9 +1509,9 @@ dependencies = [
 
 [[package]]
 name = "lru_time_cache"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53883292fdb9976d4666a9ede31ed599c255be9715947a8bd2adc72522e66749"
+checksum = "ebac060fafad3adedd0c66a80741a92ff4bc8e94a273df2ba3770ab206f2e29a"
 
 [[package]]
 name = "maplit"
@@ -1924,6 +1924,31 @@ dependencies = [
  "directories 2.0.2",
  "err-derive",
  "futures",
+ "log",
+ "quinn",
+ "rcgen 0.8.5",
+ "rustls 0.17.0",
+ "serde",
+ "serde_json",
+ "structopt 0.3.18",
+ "tokio",
+ "unwrap",
+ "webpki",
+]
+
+[[package]]
+name = "qp2p"
+version = "0.8.4"
+source = "git+https://github.com/lionel1704/quic-p2p?branch=upnp-async#bdd89678fbb3ba9c9bb1cd0357df3a156e8889d5"
+dependencies = [
+ "base64 0.12.3",
+ "bincode",
+ "bytes 0.5.6",
+ "crossbeam-channel",
+ "directories 2.0.2",
+ "err-derive",
+ "flexi_logger",
+ "futures",
  "igd 0.11.1",
  "log",
  "quinn",
@@ -1939,9 +1964,9 @@ dependencies = [
 
 [[package]]
 name = "quic-p2p"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea016023972754185c58c0ce82b51866fc665aac3fa827c0df2477e6845698fc"
+checksum = "f865b887f072da983feda6ec2f05eaaca5e37f6e286a999106adbbbcea4ad5f8"
 dependencies = [
  "base64 0.10.1",
  "bincode",
@@ -2564,7 +2589,7 @@ dependencies = [
  "log4rs",
  "lru",
  "miscreant",
- "qp2p",
+ "qp2p 0.8.4 (git+https://github.com/maidsafe/qp2p)",
  "rand 0.7.3",
  "regex",
  "self_encryption",
@@ -2672,7 +2697,7 @@ dependencies = [
 [[package]]
 name = "sn_routing"
 version = "0.37.0"
-source = "git+https://github.com/yoga07/sn_routing.git?branch=api-sign#c803d4aea96e9f3a1441cf19fc68c2eb3f46397a"
+source = "git+https://github.com/lionel1704/routing.git?branch=upnp-async#d0a7d656b9ce9db5a7f3e07a0ce130d045668628"
 dependencies = [
  "async-recursion",
  "bincode",
@@ -2686,7 +2711,7 @@ dependencies = [
  "itertools",
  "log",
  "lru_time_cache",
- "qp2p",
+ "qp2p 0.8.4 (git+https://github.com/lionel1704/quic-p2p?branch=upnp-async)",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "rand_os",
