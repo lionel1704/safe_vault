@@ -33,6 +33,7 @@ impl Accumulation {
     }
 
     pub(crate) fn process_message_envelope(&mut self, msg: &MsgEnvelope) -> Option<MsgEnvelope> {
+        info!("Processing messaging Envelope");
         if self.completed.contains(&msg.id()) {
             info!("Message already processed.");
             return None;
@@ -86,7 +87,7 @@ impl Accumulation {
         }
 
         let (msg, _sender, signatures) = self.messages.remove(&msg_id)?;
-        let signed_data = utils::serialise(&msg);
+        let signed_data = utils::serialise(&msg.message);
         for sig in &signatures {
             if !public_key_set
                 .public_key_share(sig.index)

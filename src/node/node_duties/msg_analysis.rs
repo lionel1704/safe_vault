@@ -12,13 +12,13 @@ use crate::node::node_ops::{
     TransferCmd, TransferDuty, TransferQuery,
 };
 use crate::Network;
-use log::error;
-use log::info;
+use log::{error, info};
 use sn_data_types::{
     Address, Cmd, DataCmd, DataQuery, Duty, ElderDuties, Message, MsgEnvelope, NodeCmd, NodeDuties,
     NodeEvent, NodeQuery, NodeQueryResponse, NodeRewardQuery, NodeRewardQueryResponse,
     NodeSystemCmd, NodeTransferCmd, NodeTransferQuery, NodeTransferQueryResponse, Query,
 };
+use sn_routing::MIN_AGE;
 use xor_name::XorName;
 
 // NB: This approach is not entirely good, so will need to be improved.
@@ -120,13 +120,18 @@ impl NetworkMsgAnalysis {
         let duty = msg.most_recent_sender().duty()?;
 
         let from_single_payment_elder = || {
-            msg.most_recent_sender().is_elder() && matches!(duty, Duty::Elder(ElderDuties::Payment))
+            let res = msg.most_recent_sender().is_elder()
+                && matches!(duty, Duty::Elder(ElderDuties::Payment));
+            info!("from single payment elder: {:?}", res);
+            res
         };
         let is_data_cmd = || {
-            matches!(msg.message, Message::Cmd {
+            let res = matches!(msg.message, Message::Cmd {
                 cmd: Cmd::Data { .. },
                 ..
-            })
+            });
+            info!("is data cmd: {:?}", res);
+            res
         };
 
         let accumulate = is_data_cmd()
@@ -139,13 +144,18 @@ impl NetworkMsgAnalysis {
     async fn should_accumulate_for_rewards(&self, msg: &MsgEnvelope) -> Option<bool> {
         let duty = msg.most_recent_sender().duty()?;
         let from_single_rewards_elder = || {
-            msg.most_recent_sender().is_elder() && matches!(duty, Duty::Elder(ElderDuties::Rewards))
+            let res = msg.most_recent_sender().is_elder()
+                && matches!(duty, Duty::Elder(ElderDuties::Rewards));
+            info!("from single rewards elder: {:?}", res);
+            res
         };
         let is_accumulating_reward_query = || {
-            matches!(msg.message, Message::NodeQuery {
+            let res = matches!(msg.message, Message::NodeQuery {
                 query: NodeQuery::Rewards(NodeRewardQuery::GetWalletId { .. }),
                 ..
-            })
+            });
+            info!("is accumulating reward query: {:?}", res);
+            res
         };
 
         let accumulate = is_accumulating_reward_query()
@@ -159,11 +169,13 @@ impl NetworkMsgAnalysis {
     async fn should_accumulate_for_adult(&self, msg: &MsgEnvelope) -> Option<bool> {
         let duty = msg.most_recent_sender().duty()?;
         let from_single_metadata_elder = || {
-            msg.most_recent_sender().is_elder()
-                && matches!(duty, Duty::Elder(ElderDuties::Metadata))
+            let res = msg.most_recent_sender().is_elder()
+                && matches!(duty, Duty::Elder(ElderDuties::Metadata));
+            info!("from single metadata elder: {:?}", res);
+            res
         };
         let is_chunk_msg = || {
-            matches!(msg.message,
+            let res = matches!(msg.message,
             Message::Cmd {
                 cmd:
                     Cmd::Data {
@@ -175,7 +187,9 @@ impl NetworkMsgAnalysis {
             | Message::Query { // TODO: Should not accumulate queries, just pass them through.
                 query: Query::Data(DataQuery::Blob(_)),
                 ..
-            })
+            });
+            info!("is chunk msg: {:?}", res);
+            res
         };
 
         let accumulate = is_chunk_msg()
@@ -208,6 +222,7 @@ impl NetworkMsgAnalysis {
     /// accumulated (can be seen since the sender is `Section`),
     /// it is time to actually carry out the write operation.
     async fn try_metadata(&self, msg: &MsgEnvelope) -> Option<MetadataDuty> {
+        info!("Trying metadata");
         let is_data_cmd = || {
             matches!(msg.message, Message::Cmd {
                 cmd: Cmd::Data { .. },
@@ -237,6 +252,7 @@ impl NetworkMsgAnalysis {
         } else if is_data_cmd() && from_payment_section() && is_correct_dst {
             MetadataDuty::ProcessWrite(msg.clone()) // TODO: Fix these for type safety
         } else {
+            info!("Not Processing the message");
             return None;
         };
         Some(duty)
@@ -492,7 +508,7 @@ impl NetworkMsgAnalysis {
         self.routing.is_elder().await
     }
 
-    async fn is_adult(&self) -> bool {
-        self.routing.is_adult().await
+    pub async fn is_adult(&self) -> bool {
+        !self.routing.is_elder().await && self.routing.age().await > MIN_AGE
     }
 }
