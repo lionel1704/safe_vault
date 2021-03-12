@@ -305,7 +305,7 @@ impl Node {
     async fn register_wallet(&self) -> Result<()> {
         let address = self.network_api.our_prefix().await.name();
         info!("Registering wallet: {}", self.node_info.reward_key);
-        self.messaging
+        self.network_api
             .send(OutgoingMsg {
                 msg: Message::NodeCmd {
                     cmd: NodeCmd::System(NodeSystemCmd::RegisterWallet(self.node_info.reward_key)),
@@ -366,7 +366,7 @@ impl Node {
 
             let dst = DstLocation::Section(credit.recipient.into());
 
-            self.messaging
+            self.network_api
                 .send(OutgoingMsg {
                     msg: Message::NodeCmd {
                         cmd: NodeCmd::System(NodeSystemCmd::ProposeGenesis {
@@ -533,7 +533,7 @@ impl Node {
                     pending_agreement: None,
                 });
 
-                self.messaging
+                self.network_api
                     .send(OutgoingMsg {
                         msg: Message::NodeCmd {
                             cmd: NodeCmd::System(NodeSystemCmd::ProposeGenesis {
@@ -577,7 +577,7 @@ impl Node {
                         pending_agreement: None,
                     });
 
-                    self.messaging
+                    self.network_api
                         .send(OutgoingMsg {
                             msg: Message::NodeCmd {
                                 cmd: NodeCmd::System(NodeSystemCmd::AccumulateGenesis {

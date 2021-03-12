@@ -9,7 +9,6 @@
 mod data_section;
 mod genesis;
 mod handle_msg;
-mod messaging;
 mod metadata;
 mod transfers;
 mod work;
@@ -22,7 +21,6 @@ use crate::{
     chunk_store::UsedSpace,
     node::{
         genesis::GenesisStage,
-        messaging::Messaging,
         state_db::{get_age_group, store_age_group, store_new_reward_keypair, AgeGroup},
     },
     Config, Error, Network, Result,
@@ -91,7 +89,6 @@ impl RewardsAndWallets {
 /// Main node struct.
 pub struct Node {
     // duties: NodeDuties,
-    messaging: Messaging,
     network_api: Network,
     network_events: EventStream,
     node_info: NodeInfo,
@@ -166,8 +163,6 @@ impl Node {
             // wallet_section
         };
 
-        let messaging = Messaging::new(network_api.clone());
-
         let dbs = ChunkHolderDbs::new(node_info.path())?;
         let data_section = DataSection::new(&node_info, dbs, network_api.clone()).await?;
 
@@ -184,7 +179,6 @@ impl Node {
 
             network_api,
             network_events,
-            messaging,
 
             genesis_stage: Arc::new(Mutex::new(GenesisStage::None)),
 
