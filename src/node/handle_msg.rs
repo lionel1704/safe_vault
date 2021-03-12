@@ -168,27 +168,33 @@ impl Node {
             // }
             //
             // ------ metadata ------
-            // Message::NodeQuery {
-            //     query: NodeQuery::Metadata { query, origin },
-            //     id,
-            //     ..
-            // } => MetadataDuty::ProcessRead {
-            //     query: query.clone(),
-            //     id: *id,
-            //     origin: *origin,
-            // }
-            // .into(),
-            // Message::NodeCmd {
-            //     cmd: NodeCmd::Metadata { cmd, origin },
-            //     id,
-            //     ..
-            // } => MetadataDuty::ProcessWrite {
-            //     cmd: cmd.clone(),
-            //     id: *id,
-            //     origin: *origin,
-            // }
-            // .into(),
-            // //
+            Message::NodeQuery {
+                query: NodeQuery::Metadata { query, origin },
+                id,
+                ..
+            } => {
+                self.data_section
+                    .process_metadata_duty(MetadataDuty::ProcessRead {
+                        query: query.clone(),
+                        id: *id,
+                        origin: *origin,
+                    })
+                    .await
+            }
+            Message::NodeCmd {
+                cmd: NodeCmd::Metadata { cmd, origin },
+                id,
+                ..
+            } => {
+                self.data_section
+                    .process_metadata_duty(MetadataDuty::ProcessWrite {
+                        cmd: cmd.clone(),
+                        id: *id,
+                        origin: *origin,
+                    })
+                    .await
+            }
+            //
             // // ------ adult ------
             // Message::NodeQuery {
             //     query: NodeQuery::Chunks { query, origin },

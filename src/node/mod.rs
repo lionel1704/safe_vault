@@ -10,14 +10,13 @@ mod data_section;
 mod genesis;
 mod handle_msg;
 mod messaging;
-mod transfers;
 mod metadata;
+mod transfers;
 mod work;
 
 pub(crate) mod node_ops;
 pub mod state_db;
 
-use hex_fmt::HexFmt;
 use crate::{
     capacity::ChunkHolderDbs,
     chunk_store::UsedSpace,
@@ -29,6 +28,7 @@ use crate::{
     Config, Error, Network, Result,
 };
 use bls::SecretKey;
+use hex_fmt::HexFmt;
 // use handle_msg::handle_msg;
 use ed25519_dalek::PublicKey as Ed25519PublicKey;
 use futures::lock::Mutex;
@@ -48,8 +48,8 @@ use std::{
     net::SocketAddr,
 };
 
-use self::transfers::Transfers;
 use self::data_section::DataSection;
+use self::transfers::Transfers;
 
 /// Info about the node.
 #[derive(Clone)]
