@@ -33,6 +33,7 @@ use crate::{
         node_ops::{NetworkDuties, NodeDuty, NodeMessagingDuty, OutgoingMsg},
         state_db::{get_age_group, store_age_group, store_new_reward_keypair, AgeGroup},
     },
+    capacity::ChunkHolderDbs,
     Config, Error, Network, Result,
 };
 use bls::SecretKey;
@@ -109,6 +110,9 @@ pub struct Node {
     network_events: EventStream,
     node_info: NodeInfo,
 
+    // data processing
+    data_section: DataSection,
+
     // old adult
     // prefix: Prefix,
     // node_name: XorName,
@@ -179,6 +183,8 @@ impl Node {
         };
 
         let messaging = Messaging::new(network_api.clone());
+        let dbs = ChunkHolderDbs::new(node_info.path())?;
+        let data_section = DataSection::new(&node_info, dbs, network_api.clone()).await?;
 
         debug!("NEW NODE after messaging");
 
@@ -188,6 +194,7 @@ impl Node {
             node_id: network_api.public_key().await,
 
             // interaction: NodeInteraction::new(network_api.clone()),
+            data_section,
             node_info,
 
             network_api,

@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    node::data_section::DataSection,
+    node::node_ops::{DataSectionDuty, MetadataDuty},
     // node::node_ops::{
     //     AdultDuty, ChunkReplicationCmd, ChunkReplicationDuty, ChunkReplicationQuery,
     //     ChunkStoreDuty, ElderDuty, MetadataDuty, NetworkDuties, NodeDuty, RewardCmd, RewardDuty,
@@ -56,7 +58,7 @@ impl Node {
         debug!(">>>>>>>>>>>> Evaluating received msg. {:?}.", msg);
         let msg_id = msg.id();
         if let SrcLocation::EndUser(origin) = src {
-            self.match_user_sent_msg(msg.clone(), origin)?
+            self.match_user_sent_msg(msg.clone(), origin).await?
             // if res.is_empty() {
             //     return Err(Error::InvalidMessage(
             //         msg_id,
@@ -93,13 +95,17 @@ impl Node {
         }
     }
 
-    fn match_user_sent_msg(&self, msg: Message, origin: EndUser) -> Result<()> {
+    async fn match_user_sent_msg(&mut self, msg: Message, origin: EndUser) -> Result<()> {
         match msg {
             // TODO: match and parse directly
-            // Message::Query {
-            //     query: Query::Data(query),
-            //     id,
-            //     ..
+            Message::Query {
+                query: Query::Data(query),
+                id,
+                ..
+            } => {
+                self.data_section.process_metadata_duty(MetadataDuty::ProcessRead { query, id, origin }).await?;
+                Ok(())
+            },
             // } => NetworkDuties::from(MetadataDuty::ProcessRead { query, id, origin }),
             // Message::Cmd {
             //     cmd: Cmd::Data { .. },

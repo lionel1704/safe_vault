@@ -337,7 +337,7 @@ pub enum DataSectionDuty {
     /// Dealing out rewards for contributing to
     /// the network by storing metadata / data, and
     /// carrying out operations on those.
-    RunAsRewards(RewardDuty),
+    // RunAsRewards(RewardDuty),
     NoOp,
 }
 
@@ -541,27 +541,27 @@ pub enum RewardQuery {
     // GetSectionWalletHistory,
 }
 
-impl From<RewardDuty> for NetworkDuties {
-    fn from(duty: RewardDuty) -> Self {
-        use DataSectionDuty::*;
-        use ElderDuty::*;
-        use NetworkDuty::*;
-        if matches!(duty, RewardDuty::NoOp) {
-            vec![]
-        } else {
-            vec![RunAsElder(RunAsDataSection(RunAsRewards(duty)))]
-        }
-    }
-}
+// impl From<RewardDuty> for NetworkDuties {
+//     fn from(duty: RewardDuty) -> Self {
+//         use DataSectionDuty::*;
+//         use ElderDuty::*;
+//         use NetworkDuty::*;
+//         if matches!(duty, RewardDuty::NoOp) {
+//             vec![]
+//         } else {
+//             vec![RunAsElder(RunAsDataSection(RunAsRewards(duty)))]
+//         }
+//     }
+// }
 
-impl From<RewardDuty> for NetworkDuty {
-    fn from(duty: RewardDuty) -> Self {
-        use DataSectionDuty::*;
-        use ElderDuty::*;
-        use NetworkDuty::*;
-        RunAsElder(RunAsDataSection(RunAsRewards(duty)))
-    }
-}
+// impl From<RewardDuty> for NetworkDuty {
+//     fn from(duty: RewardDuty) -> Self {
+//         use DataSectionDuty::*;
+//         use ElderDuty::*;
+//         use NetworkDuty::*;
+//         RunAsElder(RunAsDataSection(RunAsRewards(duty)))
+//     }
+// }
 
 // --------------- Transfers ---------------
 

@@ -29,6 +29,8 @@ use sn_transfers::TransferActor;
 use std::collections::BTreeMap;
 use xor_name::XorName;
 
+use super::node_ops::MetadataDuty;
+
 /// A DataSection is responsible for
 /// the storage and retrieval of data,
 /// and the rewarding of nodes in the section
@@ -38,9 +40,9 @@ pub struct DataSection {
     metadata: Metadata,
     /// Rewards for performing storage
     /// services to the network.
-    rewards: Rewards,
-    /// The network state.
-    rewards_and_wallets: RewardsAndWallets,
+    // rewards: Rewards,
+    // /// The network state.
+    // rewards_and_wallets: RewardsAndWallets,
 
     network: Network,
 }
@@ -51,40 +53,45 @@ pub struct RewardData {
 }
 
 impl DataSection {
-    // ///
-    // pub async fn new(
-    //     info: &NodeInfo,
-    //     dbs: ChunkHolderDbs,
-    //     rewards_and_wallets: RewardsAndWallets,
-    //     reward_data: RewardData,
-    //     network: Network,
-    // ) -> Result<Self> {
-    //     // Metadata
-    //     let metadata = Metadata::new(info, dbs, network.clone()).await?;
-    //     // Rewards
-    //     let signing = ElderSigning::new(network.clone(), network.our_public_key_set().await?);
-    //     let actor = TransferActor::from_info(signing, reward_data.section_wallet, Validator {})?;
-    //     let reward_calc = RewardCalc::new(network.our_prefix().await);
-    //     let rewards = Rewards::new(actor, reward_data.node_rewards, reward_calc);
+    ///
+    pub async fn new(
+        info: &NodeInfo,
+        dbs: ChunkHolderDbs,
+        // rewards_and_wallets: RewardsAndWallets,
+        // reward_data: RewardData,
+        network: Network,
+    ) -> Result<Self> {
+        // Metadata
+        let metadata = Metadata::new(info, dbs, network.clone()).await?;
+        // Rewards
+        let signing = ElderSigning::new(network.clone(), network.our_public_key_set().await?);
+        // let actor = TransferActor::from_info(signing, reward_data.section_wallet, Validator {})?;
+        // let reward_calc = RewardCalc::new(network.our_prefix().await);
+        // let rewards = Rewards::new(actor, reward_data.node_rewards, reward_calc);
 
-    //     Ok(Self {
-    //         metadata,
-    //         rewards,
-    //         rewards_and_wallets,
-    //     })
-    // }
+        Ok(Self {
+            metadata,
+            // rewards,
+            // rewards_and_wallets,
+            network
+        })
+    }
 
-    // pub async fn process_data_section_duty(
-    //     &mut self,
-    //     duty: DataSectionDuty,
-    // ) -> Result<NetworkDuties> {
-    //     use DataSectionDuty::*;
-    //     match duty {
-    //         RunAsMetadata(duty) => self.metadata.process_metadata_duty(duty).await,
-    //         RunAsRewards(duty) => self.rewards.process_reward_duty(duty).await,
-    //         NoOp => Ok(vec![]),
-    //     }
-    // }
+    pub async fn process_metadata_duty(&mut self, duty: MetadataDuty) -> Result<()> {
+        self.metadata.process_metadata_duty(duty).await
+    }
+
+    pub async fn process_data_section_duty(
+        &mut self,
+        duty: DataSectionDuty,
+    ) -> Result<NetworkDuties> {
+        use DataSectionDuty::*;
+        match duty {
+            RunAsMetadata(duty) => self.metadata.process_metadata_duty(duty).await,
+            // RunAsRewards(duty) => self.rewards.process_reward_duty(duty).await,
+            NoOp => Ok(vec![]),
+        }
+    }
 
     // ///
     // pub fn section_wallet(&self) -> WalletInfo {

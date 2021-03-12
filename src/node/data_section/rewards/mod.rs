@@ -49,19 +49,19 @@ pub struct Rewards {
 // Node age
 type Age = u8;
 
-// impl Rewards {
-//     pub fn new(
-//         actor: SectionActor,
-//         node_rewards: BTreeMap<XorName, NodeRewardStage>,
-//         reward_calc: RewardCalc,
-//     ) -> Self {
-//         let section_funds = SectionFunds::new(actor);
-//         Self {
-//             node_rewards: node_rewards.into_iter().collect(),
-//             section_funds,
-//             reward_calc,
-//         }
-//     }
+impl Rewards {
+    pub fn new(
+        actor: SectionActor,
+        node_rewards: BTreeMap<XorName, NodeRewardStage>,
+        reward_calc: RewardCalc,
+    ) -> Self {
+        let section_funds = SectionFunds::new(actor);
+        Self {
+            node_rewards: node_rewards.into_iter().collect(),
+            section_funds,
+            reward_calc,
+        }
+    }
 
 //     ///
 //     pub fn section_wallet(&self) -> WalletInfo {
@@ -478,4 +478,4 @@ type Age = u8;
 //             aggregation: Aggregation::AtDestination,
 //         }))
 //     }
-// }
+}
