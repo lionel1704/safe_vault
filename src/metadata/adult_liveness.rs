@@ -10,7 +10,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use itertools::Itertools;
 use sn_data_types::BlobAddress;
-use sn_messaging::{client::BlobWrite, EndUser, MessageId};
+use sn_messaging::{EndUser, MessageId};
 use sn_routing::XorName;
 use std::collections::hash_map::Entry;
 
@@ -26,7 +26,7 @@ enum Operation {
         targets: BTreeSet<XorName>,
     },
     Write {
-        blob_write: Box<BlobWrite>,
+        address: BlobAddress,
         // Set to None if write was initiated by the section
         origin: Option<EndUser>,
         targets: BTreeSet<XorName>,
@@ -54,12 +54,12 @@ impl AdultLiveness {
         &mut self,
         msg_id: MessageId,
         origin: Option<EndUser>,
-        blob_write: BlobWrite,
+        address: BlobAddress,
         targets: BTreeSet<XorName>,
     ) -> bool {
         let new_operation = if let Entry::Vacant(entry) = self.ops.entry(msg_id) {
             let _ = entry.insert(Operation::Write {
-                blob_write: Box::new(blob_write),
+                address,
                 origin,
                 targets: targets.clone(),
             });
@@ -144,13 +144,13 @@ impl AdultLiveness {
         &mut self,
         correlation_id: MessageId,
         src: XorName,
-    ) -> Option<(BlobWrite, Option<EndUser>)> {
+    ) -> Option<(BlobAddress, Option<EndUser>)> {
         let op = self.ops.get(&correlation_id).cloned();
         self.remove_target(correlation_id, &src);
         op.and_then(|op| match op {
             Operation::Write {
-                blob_write, origin, ..
-            } => Some((*blob_write, origin)),
+                address, origin, ..
+            } => Some((address, origin)),
             Operation::Read { .. } => None,
         })
     }
